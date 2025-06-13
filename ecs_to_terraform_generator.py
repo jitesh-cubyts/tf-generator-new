@@ -1208,15 +1208,6 @@ class ECSToTerraformGenerator:
             print("Error: tf-template/service_template.tf not found!")
             raise
 
-    def _get_task_definition_template(self) -> str:
-        """Read generic task definition template from tf-template folder"""
-        try:
-            with open('tf-template/task_definition_template.json', 'r') as f:
-                return f.read()
-        except FileNotFoundError:
-            print("Error: tf-template/task_definition_template.json not found!")
-            raise
-
     def generate_cluster_terraform(self):
         """Generate ECS cluster Terraform file using template"""
         template = self._get_cluster_template()
