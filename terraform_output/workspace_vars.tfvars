@@ -6,7 +6,8 @@ infrastructure_config = {
   app_shortname = "liqrcon"
   cluster_name = "liqrcon-ecs-tf"
   environment = "devl"
-  region = "us-east-1"
+  primary_region = "us-east-1"
+  secondary_region = "us-east-2"
 }
 
 # === DYNATRACE MONITORING CONFIGURATION ===

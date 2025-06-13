@@ -95,7 +95,7 @@
         },
         {
           "name": "REGION",
-          "value": "${region}"
+          "value": "${primary_region}"
         }
       ],
       "linuxParameters": {

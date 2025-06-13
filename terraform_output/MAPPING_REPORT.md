@@ -32,6 +32,16 @@
   - Value: devl
   - Description: Environment
 
+- **primary_region** (string)
+  - Source: Cluster:primary_region
+  - Value: us-east-1
+  - Description: Primary Region
+
+- **secondary_region** (string)
+  - Source: Cluster:secondary_region
+  - Value: us-east-2
+  - Description: Secondary Region
+
 ## CONTAINER MAPPINGS
 
 - **liqrcon_backend_svc_container_cpu** (number)

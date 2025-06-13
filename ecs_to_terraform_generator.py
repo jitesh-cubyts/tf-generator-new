@@ -171,7 +171,7 @@ class ECSToTerraformGenerator:
                 'tf_var': 'aws_region_primary',
                 'type': 'string',
                 'default': 'us-east-1',
-                'description': 'Primary AWS region (extracted from ARNs)',
+                'description': 'Primary AWS region for ECS deployment',
                 'derive_func': self._derive_region
             },
             'Environment': {
@@ -299,8 +299,34 @@ class ECSToTerraformGenerator:
                     return parts[3]
         return 'us-east-1'
 
+    def _derive_environment_from_app_env(self):
+        """Derive environment from APP_ENV environment variable in container definitions"""
+        # Look for APP_ENV in container environment variables
+        for container_key, container_config in self.container_definitions.items():
+            env_vars = container_config.get('environment', [])
+            for env in env_vars:
+                if env.get('name') == 'APP_ENV':
+                    app_env_value = env.get('value', '').lower()
+                    print(f"  Found APP_ENV = {app_env_value}")
+                    
+                    # Map APP_ENV values to standard environment names
+                    if app_env_value in ['dev', 'development', 'devl']:
+                        return 'devl'
+                    elif app_env_value in ['test', 'testing', 'tst']:
+                        return 'test'
+                    elif app_env_value in ['stage', 'staging', 'stg']:
+                        return 'stage'
+                    elif app_env_value in ['prod', 'production']:
+                        return 'prod'
+                    else:
+                        return app_env_value  # Use as-is if not mapped
+        
+        # Fallback to cluster name method if APP_ENV not found
+        print("  APP_ENV not found, deriving from cluster name")
+        return self._derive_environment(self.cluster_name)
+
     def _derive_environment(self, cluster_name):
-        """Derive environment from cluster name"""
+        """Derive environment from cluster name (fallback method)"""
         cluster_lower = cluster_name.lower()
         if 'prod' in cluster_lower:
             return 'prod'
@@ -447,11 +473,16 @@ class ECSToTerraformGenerator:
             env_name = env_var.get('name', '')
             # For common variables, use template variables, otherwise use actual values
             if env_name in ['DT_LOG', 'DT_TENANT', 'DT_TENANTTOKEN', 'DT_CONNECTION_POINT', 
-                           'DT_CUSTOM_PROP', 'PRIVATE_BUCKET', 'REGION', 'APP_NAME', 
+                           'DT_CUSTOM_PROP', 'PRIVATE_BUCKET', 'APP_NAME', 
                            'APP_ENV', 'APP_REGION', 'APP_CLUSTER_NAME']:
                 environment.append({
                     "name": env_name,
                     "value": "${" + env_name.lower().replace('.', '_') + "}"
+                })
+            elif env_name == 'REGION':
+                environment.append({
+                    "name": env_name,
+                    "value": "${primary_region}"
                 })
             elif env_name == 'spring.profiles.active':
                 environment.append({
@@ -769,18 +800,21 @@ class ECSToTerraformGenerator:
                 env_value = env_var.get('value', '')
                 
                 # Skip common variables (already handled globally)
-                if env_name not in ['DT_LOG', 'DT_TENANT', 'DT_TENANTTOKEN', 'DT_CONNECTION_POINT', 
-                                   'DT_CUSTOM_PROP', 'PRIVATE_BUCKET', 'REGION', 'APP_NAME', 
-                                   'APP_ENV', 'APP_REGION', 'APP_CLUSTER_NAME', 'spring.profiles.active']:
-                    var_name = env_name.lower().replace('.', '_')
-                    if var_name not in self.all_variables:
-                        self.all_variables[var_name] = {
-                            'value': env_value,
-                            'description': f"Environment variable {env_name} from container {container_name}",
-                            'type': 'string',
-                            'source': f'ContainerEnv:{container_name}:{env_name}'
-                        }
-                        print(f"    ✓ {var_name} = {env_value} (container env)")
+                if env_name in ['DT_LOG', 'DT_TENANT', 'DT_TENANTTOKEN', 'DT_CONNECTION_POINT', 
+                               'DT_CUSTOM_PROP', 'PRIVATE_BUCKET', 'REGION', 'APP_NAME', 
+                               'APP_ENV', 'APP_REGION', 'APP_CLUSTER_NAME', 'spring.profiles.active']:
+                    continue  # Skip these as they are handled globally
+                
+                # Process other container-specific environment variables
+                var_name = env_name.lower().replace('.', '_')
+                if var_name not in self.all_variables:
+                    self.all_variables[var_name] = {
+                        'value': env_value,
+                        'description': f"Environment variable {env_name} from container {container_name}",
+                        'type': 'string',
+                        'source': f'ContainerEnv:{container_name}:{env_name}'
+                    }
+                    print(f"    ✓ {var_name} = {env_value} (container env)")
 
     def _get_containers_for_service(self, service_name):
         """Get all containers for a service"""
@@ -839,7 +873,8 @@ class ECSToTerraformGenerator:
         # === EXTRACT CLUSTER-LEVEL VALUES ===
         cluster_mappings = {
             'cluster_name': {'tf_var': 'cluster_name', 'type': 'string'},
-            'region': {'tf_var': 'region', 'type': 'string'},
+            'primary_region': {'tf_var': 'primary_region', 'type': 'string'},
+            'secondary_region': {'tf_var': 'secondary_region', 'type': 'string'},
             'environment': {'tf_var': 'environment', 'type': 'string'},
             'app_shortname': {'tf_var': 'app_shortname', 'type': 'string'},
         }
@@ -847,10 +882,12 @@ class ECSToTerraformGenerator:
         for aws_field, config in cluster_mappings.items():
             if aws_field == 'cluster_name':
                 value = self.cluster_name
-            elif aws_field == 'region':
+            elif aws_field == 'primary_region':
                 value = region
+            elif aws_field == 'secondary_region':
+                value = 'us-east-2'  # Default secondary region
             elif aws_field == 'environment':
-                value = self._derive_environment(self.cluster_name)
+                value = self._derive_environment_from_app_env()
             elif aws_field == 'app_shortname':
                 value = self._derive_appshortname(self.cluster_name)
             else:
@@ -872,18 +909,36 @@ class ECSToTerraformGenerator:
             service_env = self._extract_container_env_values_direct(service_name)
             all_env_vars.update(service_env)
         
-        # Store all found environment variables as global variables
+        # Store all found environment variables as global variables with proper categorization
         for env_name, env_value in all_env_vars.items():
             tf_var_name = env_name.lower().replace('.', '_')
             
+            # Skip REGION since we handle it with primary_region
+            if env_name == 'REGION':
+                continue
+            
             # Skip if already processed in service extraction
             if tf_var_name not in self.all_variables:
+                # Determine the source category for better organization
+                if env_name.startswith('DT_'):
+                    source_category = 'ContainerEnv'
+                    description = f"Environment variable {env_name} (from container definition)"
+                elif env_name.startswith('APP_'):
+                    source_category = 'ContainerEnv'
+                    description = f"Environment variable {env_name} (from container definition)"
+                elif env_name in ['PRIVATE_BUCKET', 'spring.profiles.active', 'JAVA_TOOL_OPTIONS', 'SM_SSL', 'TW_CONTAINER_NAME']:
+                    source_category = 'ContainerEnv'
+                    description = f"Environment variable {env_name} (from container definition)"
+                else:
+                    source_category = 'GlobalEnv'
+                    description = f"Global environment variable {env_name}"
+                
                 self.all_variables[tf_var_name] = {
                     'value': env_value,
-                    'description': f"Global environment variable {env_name}",
+                    'description': description,
                     'type': 'string',
                     'sensitive': 'TOKEN' in env_name.upper() or 'PASSWORD' in env_name.upper(),
-                    'source': f'GlobalEnv:{env_name}'
+                    'source': f'{source_category}:{env_name}'
                 }
                 print(f"  ✓ {tf_var_name} = {env_value} (from global env {env_name})")
     
@@ -1056,12 +1111,17 @@ class ECSToTerraformGenerator:
             
             # For common variables, use template variables
             if env_name in ['DT_LOG', 'DT_TENANT', 'DT_TENANTTOKEN', 'DT_CONNECTION_POINT', 
-                           'DT_CUSTOM_PROP', 'PRIVATE_BUCKET', 'REGION', 'APP_NAME', 
+                           'DT_CUSTOM_PROP', 'PRIVATE_BUCKET', 'APP_NAME', 
                            'APP_ENV', 'APP_REGION', 'APP_CLUSTER_NAME']:
                 var_name = env_name.lower().replace('.', '_')
                 environment.append({
                     "name": env_name,
                     "value": f"${{{var_name}}}"
+                })
+            elif env_name == 'REGION':
+                environment.append({
+                    "name": env_name,
+                    "value": "${primary_region}"
                 })
             elif env_name == 'spring.profiles.active':
                 environment.append({
@@ -1245,7 +1305,7 @@ class ECSToTerraformGenerator:
         content = "# Generated Variables File\n"
         content += "# Variables organized with object structure for services\n\n"
         
-        # Categorize variables by usage type
+        # Categorize variables by usage type (same logic as generate_workspace_vars)
         infrastructure_vars = {}
         environment_vars = {}
         dynatrace_vars = {}
@@ -1255,7 +1315,11 @@ class ECSToTerraformGenerator:
         for var_name, var_config in self.all_variables.items():
             source = var_config.get('source', '')
             
-            # Categorize variables by usage
+            # Skip region variable since we use primary_region instead
+            if var_name == 'region':
+                continue
+            
+            # Categorize variables by usage (same logic as workspace_vars)
             service_match = None
             for svc_name in self.services.keys():
                 sanitized_svc = self._sanitize_name(svc_name)
@@ -1270,11 +1334,12 @@ class ECSToTerraformGenerator:
                 clean_var_name = var_name.replace(f"{service_match}_", "")
                 service_vars[service_match][clean_var_name] = var_config
             elif source.startswith('Container:'):
+                # This is a container variable
                 container_vars[var_name] = var_config
             elif var_name.startswith('dt_') or 'dynatrace' in var_name.lower():
                 # Dynatrace-related variables
                 dynatrace_vars[var_name] = var_config
-            elif var_name in ['cluster_name', 'region', 'environment', 'app_shortname']:
+            elif var_name in ['cluster_name', 'primary_region', 'secondary_region', 'environment', 'app_shortname']:
                 # Infrastructure variables
                 infrastructure_vars[var_name] = var_config
             elif var_name.startswith('app_') or var_name in ['private_bucket', 'spring_profiles_active', 'java_tool_options', 'sm_ssl', 'tw_container_name']:
@@ -1429,6 +1494,10 @@ class ECSToTerraformGenerator:
             var_type = var_config.get('type', 'string')
             source = var_config.get('source', '')
             
+            # Skip region variable since we use primary_region instead
+            if var_name == 'region':
+                continue
+            
             # Format value based on type
             if value is not None:
                 if var_type == 'string':
@@ -1464,7 +1533,7 @@ class ECSToTerraformGenerator:
                 elif var_name.startswith('dt_') or 'dynatrace' in var_name.lower():
                     # Dynatrace-related variables
                     dynatrace_vars[var_name] = formatted_value
-                elif var_name in ['cluster_name', 'region', 'environment', 'app_shortname']:
+                elif var_name in ['cluster_name', 'primary_region', 'secondary_region', 'environment', 'app_shortname']:
                     # Infrastructure variables
                     infrastructure_vars[var_name] = formatted_value
                 elif var_name.startswith('app_') or var_name in ['private_bucket', 'spring_profiles_active', 'java_tool_options', 'sm_ssl', 'tw_container_name']:
@@ -1506,7 +1575,7 @@ class ECSToTerraformGenerator:
                 content += f'  {var_name} = {container_vars[var_name]}\n'
             content += "}\n\n"
         
-        # Generate service-specific sections
+        # Generate service object variables
         for service_name in sorted(service_vars.keys()):
             # Find original service name for display
             original_service_name = service_name

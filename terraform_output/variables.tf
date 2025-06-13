@@ -9,7 +9,8 @@ variable "infrastructure_config" {
     app_shortname = string
     cluster_name = string
     environment = string
-    region = string
+    primary_region = string
+    secondary_region = string
   })
 }
 
