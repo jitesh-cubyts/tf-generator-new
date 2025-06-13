@@ -1,56 +1,77 @@
 # Generated Workspace Variables
+# Variables organized by service and global scope
 
-app_cluster_name = "liqrcon-ecs-tf"
-app_env = "DEV"
-app_name = "liqrcon"
-app_region = "us-east-1"
-app_shortname = "liqrcon"
-cluster_name = "liqrcon-ecs-tf"
-dt_cluster_id = "App=HCG-Liquidation-Reconciliation-Services LifeCycle=devl ServiceId=liqrcon-nginx-container CmdbCode=HCG AssetId=MSR13460 CMDBLongName=Liquidation Reconciliation Services"
-dt_connection_point = "https://dynatrace-le.fanniemae.com:443/communication"
-dt_custom_prop = "App=HCG-Liquidation-Reconciliation-Services LifeCycle=devl ServiceId=liqrcon-ecs-tf CmdbCode=HCG AssetId=MSR13460 CMDBLongName=Liquidation Reconciliation Services"
-dt_log = "info"
-dt_loglevelcon = "info"
-dt_tenant = "10ca672c-fb9c-4c47-a924-6aeb96202385"
-dt_tenanttoken = "ZtfXStulWhx32Om8"
-environment = "devl"
-java_tool_options = ""
-liqrcon_backend_svc_container_cpu = 0
-liqrcon_backend_svc_container_essential = True
-liqrcon_backend_svc_container_image = "310306400902.dkr.ecr.us-east-1.amazonaws.com/liqrcon/liqrcon-tf:tps-backend-liqrcon-1.0.0-2721b090-2002758"
-liqrcon_backend_svc_container_memory = 30720
-liqrcon_backend_svc_container_name = "liqrcon-backend-svc-container"
-liqrcon_nginx_container_cpu = 0
-liqrcon_nginx_container_essential = False
-liqrcon_nginx_container_image = "920887439016.dkr.ecr.us-east-1.amazonaws.com/ssgecr/shared-images/mw/fm-mw-aws-nginx:6.5.0"
-liqrcon_nginx_container_memory = 2048
-liqrcon_nginx_container_name = "liqrcon-nginx-container"
-liqrcon_tps_backend_svc_assign_public_ip = false
-liqrcon_tps_backend_svc_container_name = "liqrcon-nginx-container"
-liqrcon_tps_backend_svc_container_port = 443
-liqrcon_tps_backend_svc_cpu = "4096"
-liqrcon_tps_backend_svc_desired_count = 1
-liqrcon_tps_backend_svc_execution_role_arn = "arn:aws:iam::310306400902:role/liqrcon-devl-sfbu-comp"
-liqrcon_tps_backend_svc_health_check_grace_period_seconds = 0
-liqrcon_tps_backend_svc_launch_type = "FARGATE"
-liqrcon_tps_backend_svc_max_capacity = 3
-liqrcon_tps_backend_svc_maximum_percent = 200
-liqrcon_tps_backend_svc_memory = "30720"
-liqrcon_tps_backend_svc_min_capacity = 1
-liqrcon_tps_backend_svc_minimum_healthy_percent = 100
-liqrcon_tps_backend_svc_network_mode = "awsvpc"
-liqrcon_tps_backend_svc_platform_version = "1.3.0"
-liqrcon_tps_backend_svc_security_groups = ["sg-002848e70774fa349", "sg-0c03858824f8e1556"]
-liqrcon_tps_backend_svc_service_name = "liqrcon-tps-backend-svc"
-liqrcon_tps_backend_svc_subnets = ["subnet-0dbc0c8a0d75b817b", "subnet-046c458e6b3cc57e2", "subnet-0f6324ddedfdfd72d", "subnet-02c679e33715abe3b"]
-liqrcon_tps_backend_svc_target_group_arn = "arn:aws:elasticloadbalancing:us-east-1:310306400902:targetgroup/liqrcon-alb-ecs-tfbackend/c37c1dff4543a214"
-liqrcon_tps_backend_svc_task_cpu = "4096"
-liqrcon_tps_backend_svc_task_definition_family = "default-family"
-liqrcon_tps_backend_svc_task_family = "liqrcon-tps-backend-svc"
-liqrcon_tps_backend_svc_task_memory = "30720"
-liqrcon_tps_backend_svc_task_role_arn = "arn:aws:iam::310306400902:role/liqrcon-devl-sfbu-comp"
-private_bucket = "liqrcon-devl-sfbu-us-east-1"
-region = "us-east-1"
-sm_ssl = "True"
-spring_profiles_active = "DEVL"
-tw_container_name = "liqrcon-backend-svc-container"
+# === INFRASTRUCTURE CONFIGURATION ===
+infrastructure_config = {
+  app_shortname = "liqrcon"
+  cluster_name = "liqrcon-ecs-tf"
+  environment = "devl"
+  region = "us-east-1"
+}
+
+# === DYNATRACE MONITORING CONFIGURATION ===
+dynatrace_config = {
+  dt_cluster_id = "App=HCG-Liquidation-Reconciliation-Services LifeCycle=devl ServiceId=liqrcon-nginx-container CmdbCode=HCG AssetId=MSR13460 CMDBLongName=Liquidation Reconciliation Services"
+  dt_connection_point = "https://dynatrace-le.fanniemae.com:443/communication"
+  dt_custom_prop = "App=HCG-Liquidation-Reconciliation-Services LifeCycle=devl ServiceId=liqrcon-ecs-tf CmdbCode=HCG AssetId=MSR13460 CMDBLongName=Liquidation Reconciliation Services"
+  dt_log = "info"
+  dt_loglevelcon = "info"
+  dt_tenant = "10ca672c-fb9c-4c47-a924-6aeb96202385"
+  dt_tenanttoken = "ZtfXStulWhx32Om8"
+}
+
+# === APPLICATION ENVIRONMENT CONFIGURATION ===
+application_config = {
+  app_cluster_name = "liqrcon-ecs-tf"
+  app_env = "DEV"
+  app_name = "liqrcon"
+  app_region = "us-east-1"
+  java_tool_options = ""
+  private_bucket = "liqrcon-devl-sfbu-us-east-1"
+  sm_ssl = "True"
+  spring_profiles_active = "DEVL"
+  tw_container_name = "liqrcon-backend-svc-container"
+}
+
+# === CONTAINER CONFIGURATIONS ===
+container_config = {
+  liqrcon_backend_svc_container_cpu = 0
+  liqrcon_backend_svc_container_essential = True
+  liqrcon_backend_svc_container_image = "310306400902.dkr.ecr.us-east-1.amazonaws.com/liqrcon/liqrcon-tf:tps-backend-liqrcon-1.0.0-2721b090-2002758"
+  liqrcon_backend_svc_container_memory = 30720
+  liqrcon_backend_svc_container_name = "liqrcon-backend-svc-container"
+  liqrcon_nginx_container_cpu = 0
+  liqrcon_nginx_container_essential = False
+  liqrcon_nginx_container_image = "920887439016.dkr.ecr.us-east-1.amazonaws.com/ssgecr/shared-images/mw/fm-mw-aws-nginx:6.5.0"
+  liqrcon_nginx_container_memory = 2048
+  liqrcon_nginx_container_name = "liqrcon-nginx-container"
+}
+
+# === SERVICE: LIQRCON-TPS-BACKEND-SVC ===
+liqrcon_tps_backend_svc_config = {
+  assign_public_ip = false
+  container_name = "liqrcon-nginx-container"
+  container_port = 443
+  cpu = "4096"
+  desired_count = 1
+  execution_role_arn = "arn:aws:iam::310306400902:role/liqrcon-devl-sfbu-comp"
+  health_check_grace_period_seconds = 0
+  launch_type = "FARGATE"
+  max_capacity = 3
+  maximum_percent = 200
+  memory = "30720"
+  min_capacity = 1
+  minimum_healthy_percent = 100
+  network_mode = "awsvpc"
+  platform_version = "1.3.0"
+  security_groups = ["sg-002848e70774fa349", "sg-0c03858824f8e1556"]
+  service_name = "liqrcon-tps-backend-svc"
+  subnets = ["subnet-0dbc0c8a0d75b817b", "subnet-046c458e6b3cc57e2", "subnet-0f6324ddedfdfd72d", "subnet-02c679e33715abe3b"]
+  target_group_arn = "arn:aws:elasticloadbalancing:us-east-1:310306400902:targetgroup/liqrcon-alb-ecs-tfbackend/c37c1dff4543a214"
+  task_cpu = "4096"
+  task_definition_family = "default-family"
+  task_family = "liqrcon-tps-backend-svc"
+  task_memory = "30720"
+  task_role_arn = "arn:aws:iam::310306400902:role/liqrcon-devl-sfbu-comp"
+}
+

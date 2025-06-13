@@ -9,32 +9,23 @@ module "ecs-task-{sanitized_service_name}" {{
   ecs_task_definition_string = templatefile(
     "./task_definitions/ecs_task_def_{sanitized_service_name}.json",
     merge(
-      # Task-level variables
+      # Task-level variables from service config object
       {{
-        task_definition_family = var.{sanitized_service_name}_task_definition_family,
-        task_role_arn         = var.{sanitized_service_name}_task_role_arn,
-        execution_role_arn    = var.{sanitized_service_name}_execution_role_arn,
-        network_mode          = var.{sanitized_service_name}_network_mode,
-        launch_type           = var.{sanitized_service_name}_launch_type,
-        task_cpu              = var.{sanitized_service_name}_task_cpu,
-        task_memory           = var.{sanitized_service_name}_task_memory,
+        task_definition_family = var.{sanitized_service_name}_config.task_definition_family,
+        task_role_arn         = var.{sanitized_service_name}_config.task_role_arn,
+        execution_role_arn    = var.{sanitized_service_name}_config.execution_role_arn,
+        network_mode          = var.{sanitized_service_name}_config.network_mode,
+        launch_type           = var.{sanitized_service_name}_config.launch_type,
+        task_cpu              = var.{sanitized_service_name}_config.task_cpu,
+        task_memory           = var.{sanitized_service_name}_config.task_memory,
       }},
-      # Global environment variables
-      {{
-        region                 = var.region,
-        dt_log                 = var.dt_log,
-        dt_tenant              = var.dt_tenant,
-        dt_tenanttoken         = var.dt_tenanttoken,
-        dt_connection_point    = var.dt_connection_point,
-        dt_custom_prop         = var.dt_custom_prop,
-        private_bucket         = var.private_bucket,
-        spring_profiles_active = var.spring_profiles_active,
-        app_name               = var.app_name,
-        app_env                = var.app_env,
-        app_region             = var.app_region,
-        app_cluster_name       = var.app_cluster_name,
-      }},
-      # Container-specific variables (populated by generator)
+      # Infrastructure variables
+      var.infrastructure_config,
+      # Dynatrace monitoring variables
+      var.dynatrace_config,
+      # Application environment variables
+      var.application_config,
+      # Container configurations
       {container_variables}
     )
   )
@@ -53,22 +44,22 @@ module "ecs-service-{sanitized_service_name}" {{
   }}
 
   appshortname                      = var.appshortname
-  microservice_name                 = var.{sanitized_service_name}_service_name
+  microservice_name                 = var.{sanitized_service_name}_config.service_name
   cluster_id                        = module.ecs-cluster-{cluster_name}.ecs_cluster_arn
   task_definition_arn               = module.ecs-task-{sanitized_service_name}.ecs_task_definition_arn
-  desired_count                     = var.{sanitized_service_name}_desired_count
-  health_check_grace_period_seconds = var.{sanitized_service_name}_health_check_grace_period_seconds
+  desired_count                     = var.{sanitized_service_name}_config.desired_count
+  health_check_grace_period_seconds = var.{sanitized_service_name}_config.health_check_grace_period_seconds
   force_new_deployment              = true
   wait_for_steady_state             = false
 
-  subnets = var.{sanitized_service_name}_subnets
+  subnets = var.{sanitized_service_name}_config.subnets
 
-  security_groups = var.{sanitized_service_name}_security_groups
+  security_groups = var.{sanitized_service_name}_config.security_groups
 
 {target_configuration}
 
   ecs_autoscaling_configuration = {{
-    "max_capacity" = var.{sanitized_service_name}_max_capacity
-    "min_capacity" = var.{sanitized_service_name}_min_capacity
+    "max_capacity" = var.{sanitized_service_name}_config.max_capacity
+    "min_capacity" = var.{sanitized_service_name}_config.min_capacity
   }}
 }} 

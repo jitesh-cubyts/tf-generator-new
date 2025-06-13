@@ -1182,9 +1182,9 @@ class ECSToTerraformGenerator:
                 target_config = f'''
   target_configuration = [
     {{
-      target_group_arn = var.{sanitized_service_name}_target_group_arn
-      container_name   = var.{sanitized_service_name}_container_name
-      container_port   = var.{sanitized_service_name}_container_port
+      target_group_arn = var.{sanitized_service_name}_config.target_group_arn
+      container_name   = var.{sanitized_service_name}_config.container_name
+      container_port   = var.{sanitized_service_name}_config.container_port
     }}
   ]'''
             
@@ -1209,35 +1209,10 @@ class ECSToTerraformGenerator:
         containers = self._get_containers_for_service(service_name)
         
         if not containers:
-            return "{}"
+            return "var.container_config"
         
-        variables = []
-        for container_config in containers:
-            container_name = container_config.get('name', 'default-container')
-            sanitized_container_name = self._sanitize_name(container_name)
-            
-            # Add container-specific variables
-            variables.extend([
-                f'{sanitized_container_name}_name = var.{sanitized_container_name}_name',
-                f'{sanitized_container_name}_image = var.{sanitized_container_name}_image',
-                f'{sanitized_container_name}_cpu = var.{sanitized_container_name}_cpu',
-                f'{sanitized_container_name}_memory = var.{sanitized_container_name}_memory',
-                f'{sanitized_container_name}_essential = var.{sanitized_container_name}_essential'
-            ])
-            
-            # Add container environment variables
-            container_env = container_config.get('environment', [])
-            for env_var in container_env:
-                env_name = env_var.get('name', '')
-                if env_name not in ['DT_LOG', 'DT_TENANT', 'DT_TENANTTOKEN', 'DT_CONNECTION_POINT', 
-                                   'DT_CUSTOM_PROP', 'PRIVATE_BUCKET', 'REGION', 'APP_NAME', 
-                                   'APP_ENV', 'APP_REGION', 'APP_CLUSTER_NAME', 'spring.profiles.active']:
-                    var_name = env_name.lower().replace('.', '_')
-                    variables.append(f'{var_name} = var.{var_name}')
-        
-        if variables:
-            return "{\n        " + ",\n        ".join(variables) + "\n      }"
-        return "{}"
+        # Use the container_config object instead of individual variables
+        return "var.container_config"
 
     def generate_task_definition_json(self):
         """Generate task definition files per service based on AWS config"""
@@ -1264,40 +1239,129 @@ class ECSToTerraformGenerator:
             print(f"Generated: {task_defs_dir}/{filename}")
 
     def generate_variables_tf(self):
-        """Generate variables.tf file with all discovered variables"""
+        """Generate variables.tf file with object-structured variables"""
         print(f"Generating variables.tf with {len(self.all_variables)} variables...")
         
-        # Sort variables by name for consistent output
-        sorted_vars = sorted(self.all_variables.items())
-        
         content = "# Generated Variables File\n"
-        content += "# All variables extracted from AWS ECS configuration\n\n"
+        content += "# Variables organized with object structure for services\n\n"
         
-        # Group variables by source type for better organization
-        source_groups = {}
-        for var_name, var_config in sorted_vars:
-            source = var_config.get('source', 'Unknown')
-            source_type = source.split(':')[0]
-            if source_type not in source_groups:
-                source_groups[source_type] = []
-            source_groups[source_type].append((var_name, var_config))
+        # Categorize variables by usage type
+        infrastructure_vars = {}
+        environment_vars = {}
+        dynatrace_vars = {}
+        service_vars = {}
+        container_vars = {}
         
-        # Generate variables grouped by source
-        for source_type in sorted(source_groups.keys()):
-            content += f"# === {source_type.upper()} VARIABLES ===\n\n"
+        for var_name, var_config in self.all_variables.items():
+            source = var_config.get('source', '')
             
-            for var_name, var_config in source_groups[source_type]:
+            # Categorize variables by usage
+            service_match = None
+            for svc_name in self.services.keys():
+                sanitized_svc = self._sanitize_name(svc_name)
+                if var_name.startswith(f"{sanitized_svc}_"):
+                    service_match = sanitized_svc
+                    break
+            
+            if service_match:
+                # This is a service-specific variable
+                if service_match not in service_vars:
+                    service_vars[service_match] = {}
+                clean_var_name = var_name.replace(f"{service_match}_", "")
+                service_vars[service_match][clean_var_name] = var_config
+            elif source.startswith('Container:'):
+                container_vars[var_name] = var_config
+            elif var_name.startswith('dt_') or 'dynatrace' in var_name.lower():
+                # Dynatrace-related variables
+                dynatrace_vars[var_name] = var_config
+            elif var_name in ['cluster_name', 'region', 'environment', 'app_shortname']:
+                # Infrastructure variables
+                infrastructure_vars[var_name] = var_config
+            elif var_name.startswith('app_') or var_name in ['private_bucket', 'spring_profiles_active', 'java_tool_options', 'sm_ssl', 'tw_container_name']:
+                # Application environment variables
+                environment_vars[var_name] = var_config
+            else:
+                # Other infrastructure variables
+                infrastructure_vars[var_name] = var_config
+        
+        # Generate infrastructure config object variable
+        if infrastructure_vars:
+            content += "# === INFRASTRUCTURE CONFIGURATION ===\n\n"
+            content += 'variable "infrastructure_config" {\n'
+            content += '  description = "Infrastructure configuration object"\n'
+            content += '  type = object({\n'
+            for var_name in sorted(infrastructure_vars.keys()):
+                var_config = infrastructure_vars[var_name]
                 var_type = var_config.get('type', 'string')
-                description = var_config.get('description', f'Variable {var_name}')
-                source = var_config.get('source', 'Unknown')
-                sensitive = var_config.get('sensitive', False)
-                
-                content += f'variable "{var_name}" {{\n'
-                content += f'  description = "{description} (Source: {source})"\n'
-                content += f'  type        = {var_type}\n'
-                if sensitive:
-                    content += f'  sensitive   = true\n'
-                content += f'}}\n\n'
+                content += f'    {var_name} = {var_type}\n'
+            content += '  })\n'
+            content += '}\n\n'
+        
+        # Generate dynatrace config object variable
+        if dynatrace_vars:
+            content += "# === DYNATRACE MONITORING CONFIGURATION ===\n\n"
+            content += 'variable "dynatrace_config" {\n'
+            content += '  description = "Dynatrace monitoring configuration object"\n'
+            content += '  type = object({\n'
+            for var_name in sorted(dynatrace_vars.keys()):
+                var_config = dynatrace_vars[var_name]
+                var_type = var_config.get('type', 'string')
+                content += f'    {var_name} = {var_type}\n'
+            content += '  })\n'
+            content += '  sensitive = true\n'
+            content += '}\n\n'
+        
+        # Generate application environment config object variable
+        if environment_vars:
+            content += "# === APPLICATION ENVIRONMENT CONFIGURATION ===\n\n"
+            content += 'variable "application_config" {\n'
+            content += '  description = "Application environment configuration object"\n'
+            content += '  type = object({\n'
+            for var_name in sorted(environment_vars.keys()):
+                var_config = environment_vars[var_name]
+                var_type = var_config.get('type', 'string')
+                content += f'    {var_name} = {var_type}\n'
+            content += '  })\n'
+            content += '}\n\n'
+        
+        # Generate container config object variable
+        if container_vars:
+            content += "# === CONTAINER CONFIGURATIONS ===\n\n"
+            content += 'variable "container_config" {\n'
+            content += '  description = "Container configurations object"\n'
+            content += '  type = object({\n'
+            for var_name in sorted(container_vars.keys()):
+                var_config = container_vars[var_name]
+                var_type = var_config.get('type', 'string')
+                content += f'    {var_name} = {var_type}\n'
+            content += '  })\n'
+            content += '}\n\n'
+        
+        # Generate service object variables
+        for service_name in sorted(service_vars.keys()):
+            # Find original service name for display
+            original_service_name = service_name
+            for orig_name in self.services.keys():
+                if self._sanitize_name(orig_name) == service_name:
+                    original_service_name = orig_name
+                    break
+            
+            content += f"# === SERVICE: {original_service_name.upper()} ===\n\n"
+            service_obj_name = f"{service_name}_config"
+            
+            # Build object type definition
+            content += f'variable "{service_obj_name}" {{\n'
+            content += f'  description = "Configuration object for {original_service_name} service"\n'
+            content += f'  type = object({{\n'
+            
+            # Add all service variables to the object type
+            for var_name in sorted(service_vars[service_name].keys()):
+                var_config = service_vars[service_name][var_name]
+                var_type = var_config.get('type', 'string')
+                content += f'    {var_name} = {var_type}\n'
+            
+            content += f'  }})\n'
+            content += f'}}\n\n'
         
         with open(f"{self.output_dir}/variables.tf", 'w') as f:
             f.write(content)
@@ -1347,26 +1411,31 @@ class ECSToTerraformGenerator:
         print(f"Generated: {self.output_dir}/MAPPING_REPORT.md")
 
     def generate_workspace_vars(self):
-        """Generate workspace_vars.tfvars file with actual values"""
+        """Generate workspace_vars.tfvars file with organized object structure"""
         print(f"Generating workspace_vars.tfvars with {len(self.all_variables)} variables...")
         
-        # Sort variables by name for consistent output
-        sorted_vars = sorted(self.all_variables.items())
+        content = "# Generated Workspace Variables\n"
+        content += "# Variables organized by service and global scope\n\n"
         
-        content = "# Generated Workspace Variables\n\n"
+        # Categorize variables by usage type
+        infrastructure_vars = {}
+        environment_vars = {}
+        dynatrace_vars = {}
+        service_vars = {}
+        container_vars = {}
         
-        for var_name, var_config in sorted_vars:
+        for var_name, var_config in self.all_variables.items():
             value = var_config.get('value')
             var_type = var_config.get('type', 'string')
+            source = var_config.get('source', '')
             
+            # Format value based on type
             if value is not None:
-                # Format value based on type
                 if var_type == 'string':
                     formatted_value = f'"{value}"'
                 elif var_type == 'bool':
                     formatted_value = str(value).lower()
                 elif var_type.startswith('list('):
-                    # Format list values
                     if isinstance(value, list):
                         formatted_items = [f'"{item}"' for item in value]
                         formatted_value = f'[{", ".join(formatted_items)}]'
@@ -1375,7 +1444,86 @@ class ECSToTerraformGenerator:
                 else:
                     formatted_value = str(value)
                 
-                content += f'{var_name} = {formatted_value}\n'
+                # Categorize variables by usage
+                service_match = None
+                for svc_name in self.services.keys():
+                    sanitized_svc = self._sanitize_name(svc_name)
+                    if var_name.startswith(f"{sanitized_svc}_"):
+                        service_match = sanitized_svc
+                        break
+                
+                if service_match:
+                    # This is a service-specific variable
+                    if service_match not in service_vars:
+                        service_vars[service_match] = {}
+                    clean_var_name = var_name.replace(f"{service_match}_", "")
+                    service_vars[service_match][clean_var_name] = formatted_value
+                elif source.startswith('Container:'):
+                    # This is a container variable
+                    container_vars[var_name] = formatted_value
+                elif var_name.startswith('dt_') or 'dynatrace' in var_name.lower():
+                    # Dynatrace-related variables
+                    dynatrace_vars[var_name] = formatted_value
+                elif var_name in ['cluster_name', 'region', 'environment', 'app_shortname']:
+                    # Infrastructure variables
+                    infrastructure_vars[var_name] = formatted_value
+                elif var_name.startswith('app_') or var_name in ['private_bucket', 'spring_profiles_active', 'java_tool_options', 'sm_ssl', 'tw_container_name']:
+                    # Application environment variables
+                    environment_vars[var_name] = formatted_value
+                else:
+                    # Other infrastructure variables
+                    infrastructure_vars[var_name] = formatted_value
+        
+        # Generate infrastructure config object
+        if infrastructure_vars:
+            content += "# === INFRASTRUCTURE CONFIGURATION ===\n"
+            content += "infrastructure_config = {\n"
+            for var_name in sorted(infrastructure_vars.keys()):
+                content += f'  {var_name} = {infrastructure_vars[var_name]}\n'
+            content += "}\n\n"
+        
+        # Generate dynatrace config object
+        if dynatrace_vars:
+            content += "# === DYNATRACE MONITORING CONFIGURATION ===\n"
+            content += "dynatrace_config = {\n"
+            for var_name in sorted(dynatrace_vars.keys()):
+                content += f'  {var_name} = {dynatrace_vars[var_name]}\n'
+            content += "}\n\n"
+        
+        # Generate application environment config object
+        if environment_vars:
+            content += "# === APPLICATION ENVIRONMENT CONFIGURATION ===\n"
+            content += "application_config = {\n"
+            for var_name in sorted(environment_vars.keys()):
+                content += f'  {var_name} = {environment_vars[var_name]}\n'
+            content += "}\n\n"
+        
+        # Generate container configurations object
+        if container_vars:
+            content += "# === CONTAINER CONFIGURATIONS ===\n"
+            content += "container_config = {\n"
+            for var_name in sorted(container_vars.keys()):
+                content += f'  {var_name} = {container_vars[var_name]}\n'
+            content += "}\n\n"
+        
+        # Generate service-specific sections
+        for service_name in sorted(service_vars.keys()):
+            # Find original service name for display
+            original_service_name = service_name
+            for orig_name in self.services.keys():
+                if self._sanitize_name(orig_name) == service_name:
+                    original_service_name = orig_name
+                    break
+            
+            content += f"# === SERVICE: {original_service_name.upper()} ===\n"
+            service_obj_name = f"{service_name}_config"
+            content += f'{service_obj_name} = {{\n'
+            
+            # Sort variables within service
+            for var_name in sorted(service_vars[service_name].keys()):
+                content += f'  {var_name} = {service_vars[service_name][var_name]}\n'
+            
+            content += '}\n\n'
         
         with open(f"{self.output_dir}/workspace_vars.tfvars", 'w') as f:
             f.write(content)
