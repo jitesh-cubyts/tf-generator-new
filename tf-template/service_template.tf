@@ -9,16 +9,6 @@ module "ecs-task-{sanitized_service_name}" {{
   ecs_task_definition_string = templatefile(
     "./task_definitions/ecs_task_def_{sanitized_service_name}.json",
     merge(
-      # Task-level variables from service config object
-      {{
-        task_definition_family = var.{sanitized_service_name}_config.task_definition_family,
-        task_role_arn         = var.{sanitized_service_name}_config.task_role_arn,
-        execution_role_arn    = var.{sanitized_service_name}_config.execution_role_arn,
-        network_mode          = var.{sanitized_service_name}_config.network_mode,
-        launch_type           = var.{sanitized_service_name}_config.launch_type,
-        task_cpu              = var.{sanitized_service_name}_config.task_cpu,
-        task_memory           = var.{sanitized_service_name}_config.task_memory,
-      }},
       # Infrastructure variables
       var.infrastructure_config,
       # Dynatrace monitoring variables
@@ -26,6 +16,7 @@ module "ecs-task-{sanitized_service_name}" {{
       # Application environment variables
       var.application_config,
       # Container configurations
+      var.container_config,
       {container_variables}
     )
   )

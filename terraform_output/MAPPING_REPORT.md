@@ -1,5 +1,5 @@
 # AWS to Terraform Variable Mapping Report
-# Generated on: "aws-liqrcon-ecs.json"
+# Generated from: aws-liqrcon-ecs.json
 # Cluster: liqrcon-ecs-tf
 # Services: liqrcon-tps-backend-svc
 
@@ -8,12 +8,12 @@
 - **liqrcon_tps_backend_svc_max_capacity** (number)
   - Source: Calculated:max_capacity
   - Value: 3
-  - Description: Maximum autoscaling capacity for liqrcon-tps-backend-svc (based on desired: 1, has_lb: True)
+  - Description: Max Capacity for liqrcon-tps-backend-svc (calculated)
 
 - **liqrcon_tps_backend_svc_min_capacity** (number)
   - Source: Calculated:min_capacity
   - Value: 1
-  - Description: Minimum autoscaling capacity for liqrcon-tps-backend-svc (based on desired: 1)
+  - Description: Min Capacity for liqrcon-tps-backend-svc (calculated)
 
 ## CLUSTER MAPPINGS
 

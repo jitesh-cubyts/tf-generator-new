@@ -1,8 +1,6 @@
 # Generated Variables File
 # Variables organized with object structure for services
 
-# === INFRASTRUCTURE CONFIGURATION ===
-
 variable "infrastructure_config" {
   description = "Infrastructure configuration object"
   type = object({
@@ -13,8 +11,6 @@ variable "infrastructure_config" {
     secondary_region = string
   })
 }
-
-# === DYNATRACE MONITORING CONFIGURATION ===
 
 variable "dynatrace_config" {
   description = "Dynatrace monitoring configuration object"
@@ -30,8 +26,6 @@ variable "dynatrace_config" {
   sensitive = true
 }
 
-# === APPLICATION ENVIRONMENT CONFIGURATION ===
-
 variable "application_config" {
   description = "Application environment configuration object"
   type = object({
@@ -46,8 +40,6 @@ variable "application_config" {
     tw_container_name = string
   })
 }
-
-# === CONTAINER CONFIGURATIONS ===
 
 variable "container_config" {
   description = "Container configurations object"

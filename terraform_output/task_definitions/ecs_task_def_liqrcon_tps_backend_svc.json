@@ -1,13 +1,185 @@
 {
-  "family": "${task_definition_family}",
-  "taskRoleArn": "${task_role_arn}",
-  "executionRoleArn": "${execution_role_arn}",
-  "networkMode": "${network_mode}",
+  "family": "${task_def_family}",
+  "taskRoleArn": "${taskrolearn}",
+  "executionRoleArn": "${executionrolearn}",
+  "networkMode": "awsvpc",
   "requiresCompatibilities": [
-    "${launch_type}"
+    "FARGATE"
   ],
-  "cpu": "${task_cpu}",
-  "memory": "${task_memory}",
+  "cpu": "${taskcpu}",
+  "memory": "${taskmemory}",
+  "containerDefinitions": [
+    {
+      "name": "${appcontainername}",
+      "image": "310306400902.dkr.ecr.us-east-1.amazonaws.com/liqrcon/liqrcon-tf:tps-backend-liqrcon-1.0.0-2721b090-2002758",
+      "cpu": 0,
+      "memory": 30720,
+      "essential": true,
+      "portMappings": [
+        {
+          "containerPort": 8000,
+          "hostPort": 8000,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "DT_LOG",
+          "value": "${dt_log}"
+        },
+        {
+          "name": "DT_TENANT",
+          "value": "${dt_tenant}"
+        },
+        {
+          "name": "DT_TENANTTOKEN",
+          "value": "${dt_tenanttoken}"
+        },
+        {
+          "name": "TW_CONTAINER_NAME",
+          "value": "${appcontainername}"
+        },
+        {
+          "name": "JAVA_TOOL_OPTIONS",
+          "value": "${java_tool_options}"
+        },
+        {
+          "name": "DT_CUSTOM_PROP",
+          "value": "${dt_custom_prop}"
+        },
+        {
+          "name": "SM_SSL",
+          "value": "True"
+        },
+        {
+          "name": "PRIVATE_BUCKET",
+          "value": "${private_bucket}"
+        },
+        {
+          "name": "spring.profiles.active",
+          "value": "${spring_profiles_active}"
+        },
+        {
+          "name": "DT_CONNECTION_POINT",
+          "value": "${dt_connection_point}"
+        },
+        {
+          "name": "REGION",
+          "value": "${awsregion}"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/aws/ecs/${cluster_name}/${appcontainername}",
+          "awslogs-create-group": "true",
+          "awslogs-region": "${awsregion}",
+          "awslogs-stream-prefix": "${appcontainername}"
+        }
+      },
+      "entryPoint": [
+        "sh",
+        "-c",
+        "/export/webapps/springboot/fnma/sbruntimectl.sh -d aws -i aws-springboot -a start"
+      ],
+      "mountPoints": [],
+      "volumesFrom": [],
+      "linuxParameters": {
+        "capabilities": {
+          "add": [],
+          "drop": []
+        }
+      },
+      "systemControls": []
+    },
+    {
+      "name": "liqrcon-nginx-container",
+      "image": "920887439016.dkr.ecr.us-east-1.amazonaws.com/ssgecr/shared-images/mw/fm-mw-aws-nginx:6.5.0",
+      "cpu": 0,
+      "memory": 2048,
+      "essential": false,
+      "portMappings": [
+        {
+          "containerPort": 443,
+          "hostPort": 443,
+          "protocol": "tcp"
+        }
+      ],
+      "environment": [
+        {
+          "name": "DT_LOG",
+          "value": "${dt_log}"
+        },
+        {
+          "name": "DT_TENANT",
+          "value": "${dt_tenant}"
+        },
+        {
+          "name": "APP_CLUSTER_NAME",
+          "value": "${app_cluster_name}"
+        },
+        {
+          "name": "DT_TENANTTOKEN",
+          "value": "${dt_tenanttoken}"
+        },
+        {
+          "name": "APP_ENV",
+          "value": "${app_env}"
+        },
+        {
+          "name": "APP_REGION",
+          "value": "${app_region}"
+        },
+        {
+          "name": "TW_CONTAINER_NAME",
+          "value": "${appcontainername}"
+        },
+        {
+          "name": "DT_LOGLEVELCON",
+          "value": "info"
+        },
+        {
+          "name": "APP_NAME",
+          "value": "${app_name}"
+        },
+        {
+          "name": "DT_CLUSTER_ID",
+          "value": "App=HCG-Liquidation-Reconciliation-Services LifeCycle=devl ServiceId=liqrcon-nginx-container CmdbCode=HCG AssetId=MSR13460 CMDBLongName=Liquidation Reconciliation Services"
+        },
+        {
+          "name": "SM_SSL",
+          "value": "True"
+        },
+        {
+          "name": "DT_CONNECTION_POINT",
+          "value": "${dt_connection_point}"
+        }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/aws/ecs/${cluster_name}/${appcontainername}",
+          "awslogs-create-group": "true",
+          "awslogs-region": "${awsregion}",
+          "awslogs-stream-prefix": "${appcontainername}"
+        }
+      },
+      "entryPoint": [
+        "sh",
+        "-c",
+        "/etc/pki/tls/certs/entrypoint.sh"
+      ],
+      "mountPoints": [],
+      "volumesFrom": [],
+      "linuxParameters": {
+        "capabilities": {
+          "add": [],
+          "drop": []
+        }
+      },
+      "systemControls": []
+    }
+  ],
   "volumes": [],
   "placementConstraints": [],
   "requiresAttributes": [
@@ -39,171 +211,8 @@
       "name": "com.amazonaws.ecs.capability.docker-remote-api.1.29"
     }
   ],
-  "tags": [],
-  "containerDefinitions": [
-    {
-      "name": "${liqrcon_backend_svc_container_name}",
-      "image": "${liqrcon_backend_svc_container_image}",
-      "cpu": "${liqrcon_backend_svc_container_cpu}",
-      "memory": "${liqrcon_backend_svc_container_memory}",
-      "essential": "${liqrcon_backend_svc_container_essential}",
-      "entryPoint": [
-        "sh",
-        "-c",
-        "/export/webapps/springboot/fnma/sbruntimectl.sh -d aws -i aws-springboot -a start"
-      ],
-      "environment": [
-        {
-          "name": "DT_LOG",
-          "value": "${dt_log}"
-        },
-        {
-          "name": "DT_TENANT",
-          "value": "${dt_tenant}"
-        },
-        {
-          "name": "DT_TENANTTOKEN",
-          "value": "${dt_tenanttoken}"
-        },
-        {
-          "name": "TW_CONTAINER_NAME",
-          "value": "${tw_container_name}"
-        },
-        {
-          "name": "JAVA_TOOL_OPTIONS",
-          "value": "${java_tool_options}"
-        },
-        {
-          "name": "DT_CUSTOM_PROP",
-          "value": "${dt_custom_prop}"
-        },
-        {
-          "name": "SM_SSL",
-          "value": "${sm_ssl}"
-        },
-        {
-          "name": "PRIVATE_BUCKET",
-          "value": "${private_bucket}"
-        },
-        {
-          "name": "spring.profiles.active",
-          "value": "${spring_profiles_active}"
-        },
-        {
-          "name": "DT_CONNECTION_POINT",
-          "value": "${dt_connection_point}"
-        },
-        {
-          "name": "REGION",
-          "value": "${primary_region}"
-        }
-      ],
-      "linuxParameters": {
-        "capabilities": {
-          "add": [],
-          "drop": []
-        }
-      },
-      "portMappings": [
-        {
-          "containerPort": 8000,
-          "hostPort": 8000,
-          "protocol": "tcp"
-        }
-      ],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "/aws/ecs/liqrcon-ecs-tf/liqrcon-liqrcon-backend-svc-container",
-          "awslogs-create-group": "true",
-          "awslogs-region": "us-east-1",
-          "awslogs-stream-prefix": "liqrcon-liqrcon-backend-svc-container"
-        }
-      }
-    },
-    {
-      "name": "${liqrcon_nginx_container_name}",
-      "image": "${liqrcon_nginx_container_image}",
-      "cpu": "${liqrcon_nginx_container_cpu}",
-      "memory": "${liqrcon_nginx_container_memory}",
-      "essential": "${liqrcon_nginx_container_essential}",
-      "entryPoint": [
-        "sh",
-        "-c",
-        "/etc/pki/tls/certs/entrypoint.sh"
-      ],
-      "environment": [
-        {
-          "name": "DT_LOG",
-          "value": "${dt_log}"
-        },
-        {
-          "name": "DT_TENANT",
-          "value": "${dt_tenant}"
-        },
-        {
-          "name": "APP_CLUSTER_NAME",
-          "value": "${app_cluster_name}"
-        },
-        {
-          "name": "DT_TENANTTOKEN",
-          "value": "${dt_tenanttoken}"
-        },
-        {
-          "name": "APP_ENV",
-          "value": "${app_env}"
-        },
-        {
-          "name": "APP_REGION",
-          "value": "${app_region}"
-        },
-        {
-          "name": "TW_CONTAINER_NAME",
-          "value": "${tw_container_name}"
-        },
-        {
-          "name": "DT_LOGLEVELCON",
-          "value": "${dt_loglevelcon}"
-        },
-        {
-          "name": "APP_NAME",
-          "value": "${app_name}"
-        },
-        {
-          "name": "DT_CLUSTER_ID",
-          "value": "${dt_cluster_id}"
-        },
-        {
-          "name": "SM_SSL",
-          "value": "${sm_ssl}"
-        },
-        {
-          "name": "DT_CONNECTION_POINT",
-          "value": "${dt_connection_point}"
-        }
-      ],
-      "linuxParameters": {
-        "capabilities": {
-          "add": [],
-          "drop": []
-        }
-      },
-      "portMappings": [
-        {
-          "containerPort": 443,
-          "hostPort": 443,
-          "protocol": "tcp"
-        }
-      ],
-      "logConfiguration": {
-        "logDriver": "awslogs",
-        "options": {
-          "awslogs-group": "/aws/ecs/liqrcon-ecs-tf",
-          "awslogs-create-group": "true",
-          "awslogs-region": "us-east-1",
-          "awslogs-stream-prefix": "liqrcon-nginx-container-tf"
-        }
-      }
-    }
+  "compatibilities": [
+    "EC2",
+    "FARGATE"
   ]
 }

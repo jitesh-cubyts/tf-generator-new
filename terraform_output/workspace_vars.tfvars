@@ -1,7 +1,6 @@
 # Generated Workspace Variables
 # Variables organized by service and global scope
 
-# === INFRASTRUCTURE CONFIGURATION ===
 infrastructure_config = {
   app_shortname = "liqrcon"
   cluster_name = "liqrcon-ecs-tf"
@@ -10,7 +9,6 @@ infrastructure_config = {
   secondary_region = "us-east-2"
 }
 
-# === DYNATRACE MONITORING CONFIGURATION ===
 dynatrace_config = {
   dt_cluster_id = "App=HCG-Liquidation-Reconciliation-Services LifeCycle=devl ServiceId=liqrcon-nginx-container CmdbCode=HCG AssetId=MSR13460 CMDBLongName=Liquidation Reconciliation Services"
   dt_connection_point = "https://dynatrace-le.fanniemae.com:443/communication"
@@ -21,7 +19,6 @@ dynatrace_config = {
   dt_tenanttoken = "ZtfXStulWhx32Om8"
 }
 
-# === APPLICATION ENVIRONMENT CONFIGURATION ===
 application_config = {
   app_cluster_name = "liqrcon-ecs-tf"
   app_env = "DEV"
@@ -34,7 +31,6 @@ application_config = {
   tw_container_name = "liqrcon-backend-svc-container"
 }
 
-# === CONTAINER CONFIGURATIONS ===
 container_config = {
   liqrcon_backend_svc_container_cpu = 0
   liqrcon_backend_svc_container_essential = True

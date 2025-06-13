@@ -9,16 +9,6 @@ module "ecs-task-liqrcon_tps_backend_svc" {
   ecs_task_definition_string = templatefile(
     "./task_definitions/ecs_task_def_liqrcon_tps_backend_svc.json",
     merge(
-      # Task-level variables from service config object
-      {
-        task_definition_family = var.liqrcon_tps_backend_svc_config.task_definition_family,
-        task_role_arn         = var.liqrcon_tps_backend_svc_config.task_role_arn,
-        execution_role_arn    = var.liqrcon_tps_backend_svc_config.execution_role_arn,
-        network_mode          = var.liqrcon_tps_backend_svc_config.network_mode,
-        launch_type           = var.liqrcon_tps_backend_svc_config.launch_type,
-        task_cpu              = var.liqrcon_tps_backend_svc_config.task_cpu,
-        task_memory           = var.liqrcon_tps_backend_svc_config.task_memory,
-      },
       # Infrastructure variables
       var.infrastructure_config,
       # Dynatrace monitoring variables
@@ -26,7 +16,19 @@ module "ecs-task-liqrcon_tps_backend_svc" {
       # Application environment variables
       var.application_config,
       # Container configurations
-      var.container_config
+      var.container_config,
+      
+      # Template variable mappings for task definition
+      {
+        task_def_family     = var.liqrcon_tps_backend_svc_config.task_definition_family,
+        taskrolearn         = var.liqrcon_tps_backend_svc_config.task_role_arn,
+        executionrolearn    = var.liqrcon_tps_backend_svc_config.execution_role_arn,
+        taskcpu             = var.liqrcon_tps_backend_svc_config.task_cpu,
+        taskmemory          = var.liqrcon_tps_backend_svc_config.task_memory,
+        appcontainername    = var.liqrcon_tps_backend_svc_config.container_name,
+        cluster_name        = var.infrastructure_config.cluster_name,
+        awsregion           = var.infrastructure_config.primary_region,
+      }
     )
   )
 
