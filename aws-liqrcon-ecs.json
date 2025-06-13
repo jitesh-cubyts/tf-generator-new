@@ -1,0 +1,285 @@
+{
+    "ecs": {
+        "liqrcon-ecs-tf/liqrcon-tps-backend-svc": {
+            "serviceArn": "arn:aws:ecs:us-east-1:310306400902:service/liqrcon-ecs-tf/liqrcon-tps-backend-svc",
+            "serviceName": "liqrcon-tps-backend-svc",
+            "clusterArn": "arn:aws:ecs:us-east-1:310306400902:cluster/liqrcon-ecs-tf",
+            "loadBalancers": [
+                {
+                    "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:310306400902:targetgroup/liqrcon-alb-ecs-tfbackend/c37c1dff4543a214",
+                    "containerName": "liqrcon-nginx-container",
+                    "containerPort": 443
+                }
+            ],
+            "serviceRegistries": [],
+            "status": "ACTIVE",
+            "desiredCount": 1,
+            "runningCount": 1,
+            "pendingCount": 0,
+            "launchType": "FARGATE",
+            "platformVersion": "1.3.0",
+            "platformFamily": "Linux",
+            "taskDefinition": "arn:aws:ecs:us-east-1:310306400902:task-definition/liqrcon-tps-backend-svc:2446",
+            "deploymentConfiguration": {
+                "deploymentCircuitBreaker": {
+                    "enable": false,
+                    "rollback": false
+                },
+                "maximumPercent": 200,
+                "minimumHealthyPercent": 100
+            },
+            "roleArn": "arn:aws:iam::310306400902:role/aws-service-role/ecs.amazonaws.com/AWSServiceRoleForECS",
+            "createdAt": "2023-11-03T11:04:26.195000-05:00",
+            "placementConstraints": [],
+            "placementStrategy": [],
+            "networkConfiguration": {
+                "awsvpcConfiguration": {
+                    "subnets": [
+                        "subnet-0dbc0c8a0d75b817b",
+                        "subnet-046c458e6b3cc57e2",
+                        "subnet-0f6324ddedfdfd72d",
+                        "subnet-02c679e33715abe3b"
+                    ],
+                    "securityGroups": [
+                        "sg-002848e70774fa349",
+                        "sg-0c03858824f8e1556"
+                    ],
+                    "assignPublicIp": "DISABLED"
+                }
+            },
+            "healthCheckGracePeriodSeconds": 0,
+            "schedulingStrategy": "REPLICA",
+            "deploymentController": {
+                "type": "ECS"
+            },
+            "createdBy": "arn:aws:iam::310306400902:role/terraform-devl-sfbu-deployer-car",
+            "enableECSManagedTags": false,
+            "propagateTags": "TASK_DEFINITION",
+            "enableExecuteCommand": false
+        },
+        "liqrcon-ecs-tf/liqrcon-tps-backend-svc/task_definition": {
+            "compareIdentifier": "liqrcon-tps-backend-svc",
+            "taskDefinitionArn": "arn:aws:ecs:us-east-1:310306400902:task-definition/liqrcon-tps-backend-svc:2446",
+            "family": "liqrcon-tps-backend-svc",
+            "taskRoleArn": "arn:aws:iam::310306400902:role/liqrcon-devl-sfbu-comp",
+            "executionRoleArn": "arn:aws:iam::310306400902:role/liqrcon-devl-sfbu-comp",
+            "networkMode": "awsvpc",
+            "revision": 2446,
+            "volumes": [],
+            "status": "ACTIVE",
+            "requiresAttributes": [
+                {
+                    "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+                },
+                {
+                    "name": "ecs.capability.execution-role-awslogs"
+                },
+                {
+                    "name": "com.amazonaws.ecs.capability.ecr-auth"
+                },
+                {
+                    "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+                },
+                {
+                    "name": "com.amazonaws.ecs.capability.task-iam-role"
+                },
+                {
+                    "name": "ecs.capability.execution-role-ecr-pull"
+                },
+                {
+                    "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+                },
+                {
+                    "name": "ecs.capability.task-eni"
+                },
+                {
+                    "name": "com.amazonaws.ecs.capability.docker-remote-api.1.29"
+                }
+            ],
+            "placementConstraints": [],
+            "compatibilities": [
+                "EC2",
+                "FARGATE"
+            ],
+            "requiresCompatibilities": [
+                "FARGATE"
+            ],
+            "cpu": "4096",
+            "memory": "30720",
+            "registeredAt": "2025-05-16T08:17:27.733000-05:00",
+            "registeredBy": "arn:aws:sts::310306400902:assumed-role/terraform-devl-sfbu-deployer-car/aws-go-sdk-1747401447309932748"
+        },
+        "liqrcon-ecs-tf/liqrcon-tps-backend-svc1/service_1/task_definition/container_definition/liqrcon-backend-svc-container": {
+            "name": "liqrcon-backend-svc-container",
+            "image": "310306400902.dkr.ecr.us-east-1.amazonaws.com/liqrcon/liqrcon-tf:tps-backend-liqrcon-1.0.0-2721b090-2002758",
+            "cpu": 0,
+            "memory": 30720,
+            "portMappings": [
+                {
+                    "containerPort": 8000,
+                    "hostPort": 8000,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": true,
+            "entryPoint": [
+                "sh",
+                "-c",
+                "/export/webapps/springboot/fnma/sbruntimectl.sh -d aws -i aws-springboot -a start"
+            ],
+            "command": [],
+            "environment": [
+                {
+                    "name": "DT_LOG",
+                    "value": "info"
+                },
+                {
+                    "name": "DT_TENANT",
+                    "value": "10ca672c-fb9c-4c47-a924-6aeb96202385"
+                },
+                {
+                    "name": "DT_TENANTTOKEN",
+                    "value": "ZtfXStulWhx32Om8"
+                },
+                {
+                    "name": "TW_CONTAINER_NAME",
+                    "value": "liqrcon-backend-svc-container"
+                },
+                {
+                    "name": "JAVA_TOOL_OPTIONS",
+                    "value": ""
+                },
+                {
+                    "name": "DT_CUSTOM_PROP",
+                    "value": "App=HCG-Liquidation-Reconciliation-Services LifeCycle=devl ServiceId=liqrcon-ecs-tf CmdbCode=HCG AssetId=MSR13460 CMDBLongName=Liquidation Reconciliation Services"
+                },
+                {
+                    "name": "SM_SSL",
+                    "value": "True"
+                },
+                {
+                    "name": "PRIVATE_BUCKET",
+                    "value": "liqrcon-devl-sfbu-us-east-1"
+                },
+                {
+                    "name": "spring.profiles.active",
+                    "value": "DEVL"
+                },
+                {
+                    "name": "DT_CONNECTION_POINT",
+                    "value": "https://dynatrace-le.fanniemae.com:443/communication"
+                },
+                {
+                    "name": "REGION",
+                    "value": "us-east-1"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "linuxParameters": {
+                "capabilities": {
+                    "add": [],
+                    "drop": []
+                }
+            },
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/aws/ecs/liqrcon-ecs-tf/liqrcon-liqrcon-backend-svc-container",
+                    "awslogs-create-group": "true",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "liqrcon-liqrcon-backend-svc-container"
+                }
+            },
+            "systemControls": []
+        },
+        "liqrcon-ecs-tf/liqrcon-tps-backend-svc1/service_1/task_definition/container_definition/liqrcon-nginx-container": {
+            "name": "liqrcon-nginx-container",
+            "image": "920887439016.dkr.ecr.us-east-1.amazonaws.com/ssgecr/shared-images/mw/fm-mw-aws-nginx:6.5.0",
+            "cpu": 0,
+            "memory": 2048,
+            "portMappings": [
+                {
+                    "containerPort": 443,
+                    "hostPort": 443,
+                    "protocol": "tcp"
+                }
+            ],
+            "essential": false,
+            "entryPoint": [
+                "sh",
+                "-c",
+                "/etc/pki/tls/certs/entrypoint.sh"
+            ],
+            "command": [],
+            "environment": [
+                {
+                    "name": "DT_LOG",
+                    "value": "info"
+                },
+                {
+                    "name": "DT_TENANT",
+                    "value": "10ca672c-fb9c-4c47-a924-6aeb96202385"
+                },
+                {
+                    "name": "APP_CLUSTER_NAME",
+                    "value": "liqrcon-ecs-tf"
+                },
+                {
+                    "name": "DT_TENANTTOKEN",
+                    "value": "ZtfXStulWhx32Om8"
+                },
+                {
+                    "name": "APP_ENV",
+                    "value": "DEV"
+                },
+                {
+                    "name": "APP_REGION",
+                    "value": "us-east-1"
+                },
+                {
+                    "name": "TW_CONTAINER_NAME",
+                    "value": "liqrcon-backend-svc-container"
+                },
+                {
+                    "name": "DT_LOGLEVELCON",
+                    "value": "info"
+                },
+                {
+                    "name": "APP_NAME",
+                    "value": "liqrcon"
+                },
+                {
+                    "name": "DT_CLUSTER_ID",
+                    "value": "App=HCG-Liquidation-Reconciliation-Services LifeCycle=devl ServiceId=liqrcon-nginx-container CmdbCode=HCG AssetId=MSR13460 CMDBLongName=Liquidation Reconciliation Services"
+                },
+                {
+                    "name": "SM_SSL",
+                    "value": "True"
+                },
+                {
+                    "name": "DT_CONNECTION_POINT",
+                    "value": "https://dynatrace-le.fanniemae.com:443/communication"
+                }
+            ],
+            "mountPoints": [],
+            "volumesFrom": [],
+            "linuxParameters": {
+                "capabilities": {
+                    "add": [],
+                    "drop": []
+                }
+            },
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/aws/ecs/liqrcon-ecs-tf",
+                    "awslogs-create-group": "true",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "liqrcon-nginx-container-tf"
+                }
+            },
+            "systemControls": []
+        }
+    }
+}
