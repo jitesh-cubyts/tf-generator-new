@@ -745,8 +745,10 @@ class ECSToTerraformGenerator:
         print(f"    ✓ {base_name}_max_capacity = {max_capacity} (calculated)")
 
         # === EXTRACT TASK DEFINITION VARIABLES FOR TEMPLATE ===
+        # Get actual task definition family from task definition, not from ARN
+        actual_family = task_def.get('family', service_name)
         task_def_vars = {
-            'task_definition_family': self._extract_family_from_arn(service_config.get('taskDefinitionArn', '')),
+            'task_definition_family': actual_family,
             'task_role_arn': task_def.get('taskRoleArn', ''),
             'execution_role_arn': task_def.get('executionRoleArn', ''),
             'network_mode': task_def.get('networkMode', 'awsvpc'),
@@ -785,10 +787,16 @@ class ECSToTerraformGenerator:
             }
             
             for var_name, value in container_vars.items():
+                # Determine variable type with special handling for essential fields
+                if 'essential' in var_name:
+                    var_type = 'bool'
+                else:
+                    var_type = 'string' if isinstance(value, str) else ('number' if isinstance(value, int) else 'bool')
+                
                 self.all_variables[var_name] = {
                     'value': value,
                     'description': f"Container {var_name.replace('_', ' ')} for {container_name}",
-                    'type': 'string' if isinstance(value, str) else ('number' if isinstance(value, int) else 'bool'),
+                    'type': var_type,
                     'source': f'Container:{container_name}'
                 }
                 print(f"    ✓ {var_name} = {value} (container variable)")
@@ -876,7 +884,8 @@ class ECSToTerraformGenerator:
             'primary_region': {'tf_var': 'primary_region', 'type': 'string'},
             'secondary_region': {'tf_var': 'secondary_region', 'type': 'string'},
             'environment': {'tf_var': 'environment', 'type': 'string'},
-            'app_shortname': {'tf_var': 'app_shortname', 'type': 'string'},
+            'appshortname': {'tf_var': 'appshortname', 'type': 'string'},
+            'logical_identifier': {'tf_var': 'logical_identifier', 'type': 'string'},
         }
         
         for aws_field, config in cluster_mappings.items():
@@ -888,8 +897,11 @@ class ECSToTerraformGenerator:
                 value = 'us-east-2'  # Default secondary region
             elif aws_field == 'environment':
                 value = self._derive_environment_from_app_env()
-            elif aws_field == 'app_shortname':
+            elif aws_field == 'appshortname':
                 value = self._derive_appshortname(self.cluster_name)
+            elif aws_field == 'logical_identifier':
+                # Extract logical identifier from cluster name (last part after last hyphen)
+                value = self.cluster_name.split('-')[-1] if '-' in self.cluster_name else self.cluster_name
             else:
                 value = None
             
@@ -1095,7 +1107,28 @@ class ECSToTerraformGenerator:
             "containerDefinitions": containers
         }
         
-        return json.dumps(task_definition, indent=2)
+        return self._format_task_definition_template(task_definition)
+
+    def _format_task_definition_template(self, task_definition: Dict) -> str:
+        """Format task definition template with proper handling of boolean and number variables"""
+        # First convert to JSON with proper indentation
+        json_str = json.dumps(task_definition, indent=2)
+        
+        # Fix boolean and number variables by removing quotes
+        # Pattern to match "${variable_name}" where variable contains specific patterns
+        import re
+        
+        # Fix boolean variables (essential, etc.)
+        json_str = re.sub(r'"\$\{([^}]*essential[^}]*)\}"', r'${\1}', json_str)
+        
+        # Fix numeric variables (cpu, memory, port numbers)
+        json_str = re.sub(r'"\$\{([^}]*(?:cpu|memory|port)[^}]*)\}"', r'${\1}', json_str)
+        
+        # Fix specific numeric fields that might not match the pattern above
+        json_str = re.sub(r'"(\$\{[^}]*_cpu\})"', r'\1', json_str)
+        json_str = re.sub(r'"(\$\{[^}]*_memory\})"', r'\1', json_str)
+        
+        return json_str
 
     def _build_container_template(self, container_config: Dict, service_name: str) -> Dict:
         """Build container template with proper variable references"""
@@ -1281,9 +1314,9 @@ class ECSToTerraformGenerator:
             # Build task definition from AWS config with variables
             task_definition_template = self._build_task_definition_template_from_config(service_name, task_def)
             
-            # Write to service-specific file
+            # Write to service-specific file with .tftpl extension
             sanitized_name = self._sanitize_name(service_name)
-            filename = f"ecs_task_def_{sanitized_name}.json"
+            filename = f"ecs_task_def_{sanitized_name}.json.tftpl"
             
             with open(f"{task_defs_dir}/{filename}", 'w') as f:
                 f.write(task_definition_template)
@@ -1330,7 +1363,7 @@ class ECSToTerraformGenerator:
             elif var_name.startswith('dt_') or 'dynatrace' in var_name.lower():
                 # Dynatrace-related variables
                 dynatrace_vars[var_name] = var_config
-            elif var_name in ['cluster_name', 'primary_region', 'secondary_region', 'environment', 'app_shortname']:
+            elif var_name in ['cluster_name', 'primary_region', 'secondary_region', 'environment', 'appshortname']:
                 # Infrastructure variables
                 infrastructure_vars[var_name] = var_config
             elif var_name.startswith('app_') or var_name in ['private_bucket', 'spring_profiles_active', 'java_tool_options', 'sm_ssl', 'tw_container_name']:
@@ -1389,6 +1422,9 @@ class ECSToTerraformGenerator:
             for var_name in sorted(container_vars.keys()):
                 var_config = container_vars[var_name]
                 var_type = var_config.get('type', 'string')
+                # Fix boolean data type in variables.tf
+                if var_type == 'bool' or 'essential' in var_name:
+                    var_type = 'bool'
                 content += f'    {var_name} = {var_type}\n'
             content += '  })\n'
             content += '}\n\n'
@@ -1422,53 +1458,15 @@ class ECSToTerraformGenerator:
         with open(f"{self.output_dir}/variables.tf", 'w') as f:
             f.write(content)
         print(f"Generated: {self.output_dir}/variables.tf")
-        
-        # Generate mapping report
-        self._generate_mapping_report()
 
-    def _generate_mapping_report(self):
-        """Generate detailed mapping report showing source of each variable"""
-        print("Generating mapping report...")
-        
-        report_content = "# AWS to Terraform Variable Mapping Report\n"
-        report_content += f"# Generated on: {json.dumps(str(Path(self.json_file_path).name))}\n"
-        report_content += f"# Cluster: {self.cluster_name}\n"
-        report_content += f"# Services: {', '.join(self.services.keys())}\n\n"
-        
-        # Group by source type
-        source_groups = {}
-        for var_name, var_config in self.all_variables.items():
-            source = var_config.get('source', 'Unknown')
-            source_type = source.split(':')[0]
-            if source_type not in source_groups:
-                source_groups[source_type] = []
-            source_groups[source_type].append((var_name, var_config))
-        
-        # Generate report sections
-        for source_type in sorted(source_groups.keys()):
-            report_content += f"## {source_type.upper()} MAPPINGS\n\n"
-            
-            # Sort variables within each group
-            sorted_vars = sorted(source_groups[source_type])
-            
-            for var_name, var_config in sorted_vars:
-                var_type = var_config.get('type', 'string')
-                description = var_config.get('description', '')
-                source = var_config.get('source', 'Unknown')
-                value = var_config.get('value', '')
-                
-                report_content += f"- **{var_name}** ({var_type})\n"
-                report_content += f"  - Source: {source}\n"
-                report_content += f"  - Value: {value}\n"
-                report_content += f"  - Description: {description}\n\n"
-        
-        with open(f"{self.output_dir}/MAPPING_REPORT.md", 'w') as f:
-            f.write(report_content)
-        print(f"Generated: {self.output_dir}/MAPPING_REPORT.md")
+
 
     def generate_workspace_vars(self):
         """Generate workspace_vars.tfvars file with organized object structure"""
         print(f"Generating workspace_vars.tfvars with {len(self.all_variables)} variables...")
+        
+        # Get environment for filename
+        environment = self.all_variables.get('environment', {}).get('value', 'devl')
         
         content = "# Generated Workspace Variables\n"
         content += "# Variables organized by service and global scope\n\n"
@@ -1494,7 +1492,12 @@ class ECSToTerraformGenerator:
                 if var_type == 'string':
                     formatted_value = f'"{value}"'
                 elif var_type == 'bool':
-                    formatted_value = str(value).lower()
+                    # Convert Python boolean to Terraform boolean
+                    if isinstance(value, bool):
+                        formatted_value = 'true' if value else 'false'
+                    else:
+                        # Handle string representations of booleans
+                        formatted_value = 'true' if str(value).lower() in ['true', '1'] else 'false'
                 elif var_type.startswith('list('):
                     if isinstance(value, list):
                         formatted_items = [f'"{item}"' for item in value]
@@ -1524,7 +1527,7 @@ class ECSToTerraformGenerator:
                 elif var_name.startswith('dt_') or 'dynatrace' in var_name.lower():
                     # Dynatrace-related variables
                     dynatrace_vars[var_name] = formatted_value
-                elif var_name in ['cluster_name', 'primary_region', 'secondary_region', 'environment', 'app_shortname']:
+                elif var_name in ['cluster_name', 'primary_region', 'secondary_region', 'environment', 'appshortname']:
                     # Infrastructure variables
                     infrastructure_vars[var_name] = formatted_value
                 elif var_name.startswith('app_') or var_name in ['private_bucket', 'spring_profiles_active', 'java_tool_options', 'sm_ssl', 'tw_container_name']:
@@ -1585,9 +1588,11 @@ class ECSToTerraformGenerator:
             
             content += '}\n\n'
         
-        with open(f"{self.output_dir}/workspace_vars.tfvars", 'w') as f:
+        # Use environment-specific filename
+        filename = f"workspace_vars.{environment}.tfvars"
+        with open(f"{self.output_dir}/{filename}", 'w') as f:
             f.write(content)
-        print(f"Generated: {self.output_dir}/workspace_vars.tfvars")
+        print(f"Generated: {self.output_dir}/{filename}")
 
     def _sanitize_name(self, name: str) -> str:
         """Sanitize name for use in Terraform variables"""

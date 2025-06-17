@@ -6,8 +6,8 @@
   "requiresCompatibilities": [
     "${launch_type}"
   ],
-  "cpu": "${task_cpu}",
-  "memory": "${task_memory}",
+  "cpu": ${task_cpu},
+  "memory": ${task_memory},
   "volumes": [],
   "placementConstraints": [],
   "requiresAttributes": [
@@ -44,9 +44,9 @@
     {
       "name": "${liqrcon_backend_svc_container_name}",
       "image": "${liqrcon_backend_svc_container_image}",
-      "cpu": "${liqrcon_backend_svc_container_cpu}",
-      "memory": "${liqrcon_backend_svc_container_memory}",
-      "essential": "${liqrcon_backend_svc_container_essential}",
+      "cpu": ${liqrcon_backend_svc_container_cpu},
+      "memory": ${liqrcon_backend_svc_container_memory},
+      "essential": ${liqrcon_backend_svc_container_essential},
       "entryPoint": [
         "sh",
         "-c",
@@ -124,9 +124,9 @@
     {
       "name": "${liqrcon_nginx_container_name}",
       "image": "${liqrcon_nginx_container_image}",
-      "cpu": "${liqrcon_nginx_container_cpu}",
-      "memory": "${liqrcon_nginx_container_memory}",
-      "essential": "${liqrcon_nginx_container_essential}",
+      "cpu": ${liqrcon_nginx_container_cpu},
+      "memory": ${liqrcon_nginx_container_memory},
+      "essential": ${liqrcon_nginx_container_essential},
       "entryPoint": [
         "sh",
         "-c",

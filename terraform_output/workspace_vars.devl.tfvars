@@ -3,9 +3,10 @@
 
 # === INFRASTRUCTURE CONFIGURATION ===
 infrastructure_config = {
-  app_shortname = "liqrcon"
+  appshortname = "liqrcon"
   cluster_name = "liqrcon-ecs-tf"
   environment = "devl"
+  logical_identifier = "tf"
   primary_region = "us-east-1"
   secondary_region = "us-east-2"
 }
@@ -37,12 +38,12 @@ application_config = {
 # === CONTAINER CONFIGURATIONS ===
 container_config = {
   liqrcon_backend_svc_container_cpu = 0
-  liqrcon_backend_svc_container_essential = True
+  liqrcon_backend_svc_container_essential = true
   liqrcon_backend_svc_container_image = "310306400902.dkr.ecr.us-east-1.amazonaws.com/liqrcon/liqrcon-tf:tps-backend-liqrcon-1.0.0-2721b090-2002758"
   liqrcon_backend_svc_container_memory = 30720
   liqrcon_backend_svc_container_name = "liqrcon-backend-svc-container"
   liqrcon_nginx_container_cpu = 0
-  liqrcon_nginx_container_essential = False
+  liqrcon_nginx_container_essential = false
   liqrcon_nginx_container_image = "920887439016.dkr.ecr.us-east-1.amazonaws.com/ssgecr/shared-images/mw/fm-mw-aws-nginx:6.5.0"
   liqrcon_nginx_container_memory = 2048
   liqrcon_nginx_container_name = "liqrcon-nginx-container"
@@ -70,7 +71,7 @@ liqrcon_tps_backend_svc_config = {
   subnets = ["subnet-0dbc0c8a0d75b817b", "subnet-046c458e6b3cc57e2", "subnet-0f6324ddedfdfd72d", "subnet-02c679e33715abe3b"]
   target_group_arn = "arn:aws:elasticloadbalancing:us-east-1:310306400902:targetgroup/liqrcon-alb-ecs-tfbackend/c37c1dff4543a214"
   task_cpu = "4096"
-  task_definition_family = "default-family"
+  task_definition_family = "liqrcon-tps-backend-svc"
   task_family = "liqrcon-tps-backend-svc"
   task_memory = "30720"
   task_role_arn = "arn:aws:iam::310306400902:role/liqrcon-devl-sfbu-comp"

@@ -7,7 +7,7 @@ module "ecs-task-{sanitized_service_name}" {{
   appshortname = var.appshortname
 
   ecs_task_definition_string = templatefile(
-    "./task_definitions/ecs_task_def_{sanitized_service_name}.json",
+    "./task_definitions/ecs_task_def_{sanitized_service_name}.json.tftpl",
     merge(
       # Task-level variables from service config object
       {{
@@ -43,7 +43,7 @@ module "ecs-service-{sanitized_service_name}" {{
     aws.local = aws.local
   }}
 
-  appshortname                      = var.appshortname
+  appshortname                      = var.infrastructure_config.appshortname
   microservice_name                 = var.{sanitized_service_name}_config.service_name
   cluster_id                        = module.ecs-cluster-{cluster_name}.ecs_cluster_arn
   task_definition_arn               = module.ecs-task-{sanitized_service_name}.ecs_task_definition_arn

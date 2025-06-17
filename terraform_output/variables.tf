@@ -6,9 +6,10 @@
 variable "infrastructure_config" {
   description = "Infrastructure configuration object"
   type = object({
-    app_shortname = string
+    appshortname = string
     cluster_name = string
     environment = string
+    logical_identifier = string
     primary_region = string
     secondary_region = string
   })
@@ -53,12 +54,12 @@ variable "container_config" {
   description = "Container configurations object"
   type = object({
     liqrcon_backend_svc_container_cpu = number
-    liqrcon_backend_svc_container_essential = number
+    liqrcon_backend_svc_container_essential = bool
     liqrcon_backend_svc_container_image = string
     liqrcon_backend_svc_container_memory = number
     liqrcon_backend_svc_container_name = string
     liqrcon_nginx_container_cpu = number
-    liqrcon_nginx_container_essential = number
+    liqrcon_nginx_container_essential = bool
     liqrcon_nginx_container_image = string
     liqrcon_nginx_container_memory = number
     liqrcon_nginx_container_name = string
