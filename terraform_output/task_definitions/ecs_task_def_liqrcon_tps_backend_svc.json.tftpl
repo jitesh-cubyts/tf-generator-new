@@ -114,10 +114,10 @@
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/aws/ecs/liqrcon-ecs-tf/liqrcon-liqrcon-backend-svc-container",
+          "awslogs-group": "${liqrcon_backend_svc_container_awslogs_group}",
           "awslogs-create-group": "true",
-          "awslogs-region": "us-east-1",
-          "awslogs-stream-prefix": "liqrcon-liqrcon-backend-svc-container"
+          "awslogs-region": "${liqrcon_backend_svc_container_awslogs_region}",
+          "awslogs-stream-prefix": "${liqrcon_backend_svc_container_awslogs_stream_prefix}"
         }
       }
     },
@@ -198,10 +198,10 @@
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/aws/ecs/liqrcon-ecs-tf",
+          "awslogs-group": "${liqrcon_nginx_container_awslogs_group}",
           "awslogs-create-group": "true",
-          "awslogs-region": "us-east-1",
-          "awslogs-stream-prefix": "liqrcon-nginx-container-tf"
+          "awslogs-region": "${liqrcon_nginx_container_awslogs_region}",
+          "awslogs-stream-prefix": "${liqrcon_nginx_container_awslogs_stream_prefix}"
         }
       }
     }

@@ -1,6 +1,12 @@
 # Generated Variables File
 # Variables organized with object structure for services
 
+variable "cluster_suffix" {
+  description = "Suffix to append to cluster names (e.g., '-tf' for terraform environments)"
+  type = string
+  default = "-tf"
+}
+
 variable "appshortname" {
   description = "Appshortname"
   type = string
@@ -61,11 +67,17 @@ variable "application_config" {
 variable "container_config" {
   description = "Container configurations object"
   type = object({
+    liqrcon_backend_svc_container_awslogs_group = string
+    liqrcon_backend_svc_container_awslogs_region = string
+    liqrcon_backend_svc_container_awslogs_stream_prefix = string
     liqrcon_backend_svc_container_cpu = number
     liqrcon_backend_svc_container_essential = bool
     liqrcon_backend_svc_container_image = string
     liqrcon_backend_svc_container_memory = number
     liqrcon_backend_svc_container_name = string
+    liqrcon_nginx_container_awslogs_group = string
+    liqrcon_nginx_container_awslogs_region = string
+    liqrcon_nginx_container_awslogs_stream_prefix = string
     liqrcon_nginx_container_cpu = number
     liqrcon_nginx_container_essential = bool
     liqrcon_nginx_container_image = string

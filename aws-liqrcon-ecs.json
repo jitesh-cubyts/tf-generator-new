@@ -1,9 +1,9 @@
 {
     "ecs": {
-        "liqrcon-ecs-tf/liqrcon-tps-backend-svc": {
-            "serviceArn": "arn:aws:ecs:us-east-1:310306400902:service/liqrcon-ecs-tf/liqrcon-tps-backend-svc",
+        "liqrcon-ecs-giza/liqrcon-tps-backend-svc": {
+            "serviceArn": "arn:aws:ecs:us-east-1:310306400902:service/liqrcon-ecs-giza/liqrcon-tps-backend-svc",
             "serviceName": "liqrcon-tps-backend-svc",
-            "clusterArn": "arn:aws:ecs:us-east-1:310306400902:cluster/liqrcon-ecs-tf",
+            "clusterArn": "arn:aws:ecs:us-east-1:310306400902:cluster/liqrcon-ecs-giza",
             "loadBalancers": [
                 {
                     "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:310306400902:targetgroup/liqrcon-alb-ecs-tfbackend/c37c1dff4543a214",
@@ -57,7 +57,7 @@
             "propagateTags": "TASK_DEFINITION",
             "enableExecuteCommand": false
         },
-        "liqrcon-ecs-tf/liqrcon-tps-backend-svc/task_definition": {
+        "liqrcon-ecs-giza/liqrcon-tps-backend-svc/task_definition": {
             "compareIdentifier": "liqrcon-tps-backend-svc",
             "taskDefinitionArn": "arn:aws:ecs:us-east-1:310306400902:task-definition/liqrcon-tps-backend-svc:2446",
             "family": "liqrcon-tps-backend-svc",
@@ -109,7 +109,7 @@
             "registeredAt": "2025-05-16T08:17:27.733000-05:00",
             "registeredBy": "arn:aws:sts::310306400902:assumed-role/terraform-devl-sfbu-deployer-car/aws-go-sdk-1747401447309932748"
         },
-        "liqrcon-ecs-tf/liqrcon-tps-backend-svc1/service_1/task_definition/container_definition/liqrcon-backend-svc-container": {
+        "liqrcon-ecs-giza/liqrcon-tps-backend-svc1/service_1/task_definition/container_definition/liqrcon-backend-svc-container": {
             "name": "liqrcon-backend-svc-container",
             "image": "310306400902.dkr.ecr.us-east-1.amazonaws.com/liqrcon/liqrcon-tf:tps-backend-liqrcon-1.0.0-2721b090-2002758",
             "cpu": 0,
@@ -151,7 +151,7 @@
                 },
                 {
                     "name": "DT_CUSTOM_PROP",
-                    "value": "App=HCG-Liquidation-Reconciliation-Services LifeCycle=devl ServiceId=liqrcon-ecs-tf CmdbCode=HCG AssetId=MSR13460 CMDBLongName=Liquidation Reconciliation Services"
+                    "value": "App=HCG-Liquidation-Reconciliation-Services LifeCycle=devl ServiceId=liqrcon-ecs-giza CmdbCode=HCG AssetId=MSR13460 CMDBLongName=Liquidation Reconciliation Services"
                 },
                 {
                     "name": "SM_SSL",
@@ -185,7 +185,7 @@
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
-                    "awslogs-group": "/aws/ecs/liqrcon-ecs-tf/liqrcon-liqrcon-backend-svc-container",
+                    "awslogs-group": "/aws/ecs/liqrcon-ecs-giza/liqrcon-liqrcon-backend-svc-container",
                     "awslogs-create-group": "true",
                     "awslogs-region": "us-east-1",
                     "awslogs-stream-prefix": "liqrcon-liqrcon-backend-svc-container"
@@ -193,7 +193,7 @@
             },
             "systemControls": []
         },
-        "liqrcon-ecs-tf/liqrcon-tps-backend-svc1/service_1/task_definition/container_definition/liqrcon-nginx-container": {
+        "liqrcon-ecs-giza/liqrcon-tps-backend-svc1/service_1/task_definition/container_definition/liqrcon-nginx-container": {
             "name": "liqrcon-nginx-container",
             "image": "920887439016.dkr.ecr.us-east-1.amazonaws.com/ssgecr/shared-images/mw/fm-mw-aws-nginx:6.5.0",
             "cpu": 0,
@@ -223,7 +223,7 @@
                 },
                 {
                     "name": "APP_CLUSTER_NAME",
-                    "value": "liqrcon-ecs-tf"
+                    "value": "liqrcon-ecs-giza"
                 },
                 {
                     "name": "DT_TENANTTOKEN",
@@ -273,7 +273,7 @@
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
-                    "awslogs-group": "/aws/ecs/liqrcon-ecs-tf",
+                    "awslogs-group": "/aws/ecs/liqrcon-ecs-giza",
                     "awslogs-create-group": "true",
                     "awslogs-region": "us-east-1",
                     "awslogs-stream-prefix": "liqrcon-nginx-container-tf"

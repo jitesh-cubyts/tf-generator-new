@@ -14,14 +14,17 @@ class ECSToTerraformGenerator:
     def __init__(self, json_file_path: str, output_dir: str = "terraform_output"):
         self.json_file_path = json_file_path
         self.output_dir = output_dir
-        self.ecs_data = {}
+        self.cluster_name = ""
         self.services = {}
         self.task_definitions = {}
         self.container_definitions = {}
-        self.cluster_name = ""
-        self.all_variables = {}  # Central store for all variables
+        self.all_variables = {}
+        self.json_data = {}
         
-        # Create output directory
+        # Configurable cluster suffix - change this to control suffix everywhere
+        self.cluster_suffix = "-tfe"  # Set to "" to disable, or change to any suffix you want
+        
+        # Ensure output directory exists
         Path(self.output_dir).mkdir(exist_ok=True)
         
         # Initialize mapping configuration
@@ -786,6 +789,18 @@ class ECSToTerraformGenerator:
                 f'{sanitized_container_name}_essential': container_config.get('essential', True)
             }
             
+            # Extract logging configuration variables
+            log_config = container_config.get('logConfiguration', {})
+            if log_config:
+                options = log_config.get('options', {})
+                # Use cluster name with configurable suffix for log group
+                cluster_name_with_suffix = f"{self.cluster_name}{self.cluster_suffix}"
+                container_vars.update({
+                    f'{sanitized_container_name}_awslogs_group': options.get('awslogs-group', f'/aws/ecs/{cluster_name_with_suffix}/{container_name}'),
+                    f'{sanitized_container_name}_awslogs_region': options.get('awslogs-region', 'us-east-1'),
+                    f'{sanitized_container_name}_awslogs_stream_prefix': options.get('awslogs-stream-prefix', f'{container_name}-logs')
+                })
+            
             for var_name, value in container_vars.items():
                 # Determine variable type with special handling for essential fields
                 if 'essential' in var_name:
@@ -890,7 +905,8 @@ class ECSToTerraformGenerator:
         
         for aws_field, config in cluster_mappings.items():
             if aws_field == 'cluster_name':
-                value = self.cluster_name
+                # Update cluster name to include configurable suffix
+                value = f"{self.cluster_name}{self.cluster_suffix}"
             elif aws_field == 'primary_region':
                 value = region
             elif aws_field == 'secondary_region':
@@ -900,8 +916,9 @@ class ECSToTerraformGenerator:
             elif aws_field == 'appshortname':
                 value = self._derive_appshortname(self.cluster_name)
             elif aws_field == 'logical_identifier':
-                # Extract logical identifier from cluster name (last part after last hyphen)
-                value = self.cluster_name.split('-')[-1] if '-' in self.cluster_name else self.cluster_name
+                # Extract logical identifier from cluster name (last part after last hyphen) and append configurable suffix
+                base_identifier = self.cluster_name.split('-')[-1] if '-' in self.cluster_name else self.cluster_name
+                value = f"{base_identifier}{self.cluster_suffix}"
             else:
                 value = None
             
@@ -929,8 +946,27 @@ class ECSToTerraformGenerator:
             if env_name == 'REGION':
                 continue
             
-            # Skip if already processed in service extraction
-            if tf_var_name not in self.all_variables:
+            # Update cluster name related variables with -tf suffix
+            if env_name == 'APP_CLUSTER_NAME':
+                env_value = f"{env_value}{self.cluster_suffix}"
+            elif env_name == 'DT_CUSTOM_PROP':
+                # Update ServiceId in DT_CUSTOM_PROP to include configurable suffix
+                if 'ServiceId=' in env_value:
+                    parts = env_value.split(' ')
+                    for i, part in enumerate(parts):
+                        if part.startswith('ServiceId='):
+                            service_id = part.split('=')[1]
+                            parts[i] = f"ServiceId={service_id}{self.cluster_suffix}"
+                            break
+                    env_value = ' '.join(parts)
+            
+            # Apply the update even if the variable already exists
+            if tf_var_name in self.all_variables:
+                # Update existing variable with new value
+                self.all_variables[tf_var_name]['value'] = env_value
+                print(f"  ✓ Updated {tf_var_name} = {env_value} (updated existing)")
+            else:
+                # Create new variable
                 # Determine the source category for better organization
                 if env_name.startswith('DT_'):
                     source_category = 'ContainerEnv'
@@ -953,7 +989,8 @@ class ECSToTerraformGenerator:
                     'source': f'{source_category}:{env_name}'
                 }
                 print(f"  ✓ {tf_var_name} = {env_value} (from global env {env_name})")
-    
+
+
     def _extract_region_from_arns(self) -> str:
         """Extract AWS region from ARNs in the config"""
         # Look for any ARN in the config to extract region
@@ -1168,6 +1205,20 @@ class ECSToTerraformGenerator:
                     "name": env_name,
                     "value": f"${{{var_name}}}"
                 })
+
+        # Parameterize logConfiguration
+        log_config = container_config.get("logConfiguration", {})
+        parameterized_log_config = {}
+        if log_config:
+            parameterized_log_config = {
+                "logDriver": log_config.get("logDriver", "awslogs"),
+                "options": {
+                    "awslogs-group": f"${{{sanitized_container_name}_awslogs_group}}",
+                    "awslogs-create-group": log_config.get("options", {}).get("awslogs-create-group", "true"),
+                    "awslogs-region": f"${{{sanitized_container_name}_awslogs_region}}",
+                    "awslogs-stream-prefix": f"${{{sanitized_container_name}_awslogs_stream_prefix}}"
+                }
+            }
         
         # Build container template with variables
         container_template = {
@@ -1194,7 +1245,7 @@ class ECSToTerraformGenerator:
             "systemControls": container_config.get("systemControls", []),
             "resourceRequirements": container_config.get("resourceRequirements", []),
             "portMappings": container_config.get("portMappings", []),
-            "logConfiguration": container_config.get("logConfiguration", {}),
+            "logConfiguration": parameterized_log_config,
             "healthCheck": container_config.get("healthCheck", {}),
             "repositoryCredentials": container_config.get("repositoryCredentials", {})
         }
@@ -1244,11 +1295,13 @@ class ECSToTerraformGenerator:
     def generate_cluster_terraform(self):
         """Generate ECS cluster Terraform file using template"""
         template = self._get_cluster_template()
+        # Use cluster name with configurable suffix
+        updated_cluster_name = f"{self.cluster_name}{self.cluster_suffix}"
         cluster_content = template.format(
-            cluster_name=self._sanitize_name(self.cluster_name).replace('_', '-')
+            cluster_name=self._sanitize_name(updated_cluster_name).replace('_', '-')
         )
         
-        filename = f"ecs-cluster-{self.cluster_name}.tf"
+        filename = f"ecs-cluster-{updated_cluster_name}.tf"
         with open(f"{self.output_dir}/{filename}", 'w') as f:
             f.write(cluster_content)
         print(f"Generated: {self.output_dir}/{filename}")
@@ -1275,10 +1328,12 @@ class ECSToTerraformGenerator:
             # Build container variables for templatefile
             container_variables = self._build_container_variables_map(service_name)
             
+            # Use cluster name with configurable suffix
+            updated_cluster_name = f"{self.cluster_name}{self.cluster_suffix}"
             service_content = template.format(
                 service_name=service_name,
                 sanitized_service_name=sanitized_service_name,
-                cluster_name=self._sanitize_name(self.cluster_name).replace('_', '-'),
+                cluster_name=self._sanitize_name(updated_cluster_name).replace('_', '-'),
                 target_configuration=target_config,
                 container_variables=container_variables
             )
@@ -1328,6 +1383,13 @@ class ECSToTerraformGenerator:
         
         content = "# Generated Variables File\n"
         content += "# Variables organized with object structure for services\n\n"
+        
+        # === CLUSTER CONFIGURATION VARIABLE ===
+        content += "variable \"cluster_suffix\" {\n"
+        content += "  description = \"Suffix to append to cluster names (e.g., '-tf' for terraform environments)\"\n"
+        content += "  type = string\n"
+        content += "  default = \"-tf\"\n"
+        content += "}\n\n"
         
         # === ROOT LEVEL VARIABLES ===
         # Generate appshortname and logical_identifier as root-level variables
@@ -1485,8 +1547,11 @@ class ECSToTerraformGenerator:
         content = "# Generated Workspace Variables\n"
         content += "# Variables organized by service and global scope\n\n"
         
-        # === ROOT LEVEL VARIABLES ===
-        # Generate appshortname and logical_identifier as root-level variables
+        # Add cluster_suffix as a configurable parameter at the top
+        content += "# === CLUSTER CONFIGURATION ===\n"
+        content += f'cluster_suffix = "{self.cluster_suffix}"\n\n'
+        
+        # Generate root-level variables (appshortname, logical_identifier)
         root_level_vars = ['appshortname', 'logical_identifier']
         for var_name in root_level_vars:
             if var_name in self.all_variables:
@@ -1664,6 +1729,10 @@ class ECSToTerraformGenerator:
         for service_name, service_config in self.services.items():
             task_def = self.task_definitions.get(service_name, {})
             self._extract_variables_from_service(service_name, service_config, task_def)
+            self._extract_container_variables(service_name)
+        
+        # === FINAL FORCE UPDATE: Apply -tf suffix to all cluster-related variables ===
+        self._apply_final_cluster_updates()
         
         # Generate files
         self.generate_cluster_terraform()
@@ -1674,6 +1743,51 @@ class ECSToTerraformGenerator:
         
         print(f"\n✅ Generation complete! Files created in '{self.output_dir}' directory")
         print(f"📊 Total variables extracted: {len(self.all_variables)}")
+
+    def _apply_final_cluster_updates(self):
+        """Apply final updates to ensure all cluster-related variables have configurable suffix"""
+        print("  Applying final cluster name updates...")
+        
+        # Force update cluster_name itself
+        if 'cluster_name' in self.all_variables:
+            current_value = self.all_variables['cluster_name']['value']
+            if not current_value.endswith(self.cluster_suffix):
+                updated_value = f"{current_value}{self.cluster_suffix}"
+                self.all_variables['cluster_name']['value'] = updated_value
+                print(f"  ✓ Updated cluster_name = {updated_value}")
+        
+        # Force update app_cluster_name
+        if 'app_cluster_name' in self.all_variables:
+            current_value = self.all_variables['app_cluster_name']['value']
+            if not current_value.endswith(self.cluster_suffix):
+                updated_value = f"{current_value}{self.cluster_suffix}"
+                self.all_variables['app_cluster_name']['value'] = updated_value
+                print(f"  ✓ Updated app_cluster_name = {updated_value}")
+        
+        # Force update dt_custom_prop
+        if 'dt_custom_prop' in self.all_variables:
+            current_value = self.all_variables['dt_custom_prop']['value']
+            if 'ServiceId=' in current_value:
+                parts = current_value.split(' ')
+                for i, part in enumerate(parts):
+                    if part.startswith('ServiceId='):
+                        service_id = part.split('=')[1]
+                        if not service_id.endswith(self.cluster_suffix):
+                            parts[i] = f"ServiceId={service_id}{self.cluster_suffix}"
+                            break
+                updated_value = ' '.join(parts)
+                self.all_variables['dt_custom_prop']['value'] = updated_value
+                print(f"  ✓ Updated dt_custom_prop ServiceId")
+        
+        # Force update logging group variables to use cluster name with configurable suffix
+        updated_cluster_name = f"{self.cluster_name}{self.cluster_suffix}"
+        for var_name in self.all_variables:
+            if 'awslogs_group' in var_name:
+                current_value = self.all_variables[var_name]['value']
+                if f"/aws/ecs/{self.cluster_name}" in current_value and f"/aws/ecs/{updated_cluster_name}" not in current_value:
+                    updated_value = current_value.replace(f"/aws/ecs/{self.cluster_name}", f"/aws/ecs/{updated_cluster_name}")
+                    self.all_variables[var_name]['value'] = updated_value
+                    print(f"  ✓ Updated {var_name} log group")
 
 def main():
     if len(sys.argv) != 2:

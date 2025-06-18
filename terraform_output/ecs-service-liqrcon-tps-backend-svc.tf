@@ -1,8 +1,8 @@
 // # ECS Service and Task Definition: liqrcon-tps-backend-svc
 
 module "ecs-task-liqrcon_tps_backend_svc" {
-  source  = "terraform-ec2-01.terraform.prod-etss.aws.fanniemae.com/fanniemae-org/ecs-task-definition/aws"
-  version = "~>1.0.23"
+  source  = "terraform.fanniemae.com/fanniemae-org/ecs-task-definition/aws"
+  version = "~>1.0.27"
 
   appshortname = var.appshortname
 
@@ -37,7 +37,7 @@ module "ecs-task-liqrcon_tps_backend_svc" {
 
 module "ecs-service-liqrcon_tps_backend_svc" {
   source  = "terraform.fanniemae.com/fanniemae-org/ecs-service/aws"
-  version = "1.0.19"
+  version = "~>1.0.25"
 
   providers = {
     aws.local = aws.local
@@ -45,7 +45,7 @@ module "ecs-service-liqrcon_tps_backend_svc" {
 
   appshortname                      = var.appshortname
   microservice_name                 = var.liqrcon_tps_backend_svc_config.service_name
-  cluster_id                        = module.ecs-cluster-liqrcon-ecs-tf.ecs_cluster_arn
+  cluster_id                        = module.ecs-cluster-liqrcon-ecs-giza-tfe.ecs_cluster_arn
   task_definition_arn               = module.ecs-task-liqrcon_tps_backend_svc.ecs_task_definition_arn
   desired_count                     = var.liqrcon_tps_backend_svc_config.desired_count
   health_check_grace_period_seconds = var.liqrcon_tps_backend_svc_config.health_check_grace_period_seconds

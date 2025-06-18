@@ -1,8 +1,8 @@
 // # ECS Service and Task Definition: {service_name}
 
 module "ecs-task-{sanitized_service_name}" {{
-  source  = "terraform-ec2-01.terraform.prod-etss.aws.fanniemae.com/fanniemae-org/ecs-task-definition/aws"
-  version = "~>1.0.23"
+  source  = "terraform.fanniemae.com/fanniemae-org/ecs-task-definition/aws"
+  version = "~>1.0.27"
 
   appshortname = var.appshortname
 
@@ -37,7 +37,7 @@ module "ecs-task-{sanitized_service_name}" {{
 
 module "ecs-service-{sanitized_service_name}" {{
   source  = "terraform.fanniemae.com/fanniemae-org/ecs-service/aws"
-  version = "1.0.19"
+  version = "~>1.0.25"
 
   providers = {{
     aws.local = aws.local

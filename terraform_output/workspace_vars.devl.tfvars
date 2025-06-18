@@ -1,12 +1,15 @@
 # Generated Workspace Variables
 # Variables organized by service and global scope
 
+# === CLUSTER CONFIGURATION ===
+cluster_suffix = "-tfe"
+
 appshortname = "liqrcon"
-logical_identifier = "tf"
+logical_identifier = "giza-tfe"
 
 # === INFRASTRUCTURE CONFIGURATION ===
 infrastructure_config = {
-  cluster_name = "liqrcon-ecs-tf"
+  cluster_name = "liqrcon-ecs-giza-tfe"
   environment = "devl"
   primary_region = "us-east-1"
   secondary_region = "us-east-2"
@@ -16,7 +19,7 @@ infrastructure_config = {
 dynatrace_config = {
   dt_cluster_id = "App=HCG-Liquidation-Reconciliation-Services LifeCycle=devl ServiceId=liqrcon-nginx-container CmdbCode=HCG AssetId=MSR13460 CMDBLongName=Liquidation Reconciliation Services"
   dt_connection_point = "https://dynatrace-le.fanniemae.com:443/communication"
-  dt_custom_prop = "App=HCG-Liquidation-Reconciliation-Services LifeCycle=devl ServiceId=liqrcon-ecs-tf CmdbCode=HCG AssetId=MSR13460 CMDBLongName=Liquidation Reconciliation Services"
+  dt_custom_prop = "App=HCG-Liquidation-Reconciliation-Services LifeCycle=devl ServiceId=liqrcon-ecs-giza-tfe CmdbCode=HCG AssetId=MSR13460 CMDBLongName=Liquidation Reconciliation Services"
   dt_log = "info"
   dt_loglevelcon = "info"
   dt_tenant = "10ca672c-fb9c-4c47-a924-6aeb96202385"
@@ -25,7 +28,7 @@ dynatrace_config = {
 
 # === APPLICATION ENVIRONMENT CONFIGURATION ===
 application_config = {
-  app_cluster_name = "liqrcon-ecs-tf"
+  app_cluster_name = "liqrcon-ecs-giza-tfe"
   app_env = "DEV"
   app_name = "liqrcon"
   app_region = "us-east-1"
@@ -38,11 +41,17 @@ application_config = {
 
 # === CONTAINER CONFIGURATIONS ===
 container_config = {
+  liqrcon_backend_svc_container_awslogs_group = "/aws/ecs/liqrcon-ecs-giza-tfe/liqrcon-liqrcon-backend-svc-container"
+  liqrcon_backend_svc_container_awslogs_region = "us-east-1"
+  liqrcon_backend_svc_container_awslogs_stream_prefix = "liqrcon-liqrcon-backend-svc-container"
   liqrcon_backend_svc_container_cpu = 0
   liqrcon_backend_svc_container_essential = true
   liqrcon_backend_svc_container_image = "310306400902.dkr.ecr.us-east-1.amazonaws.com/liqrcon/liqrcon-tf:tps-backend-liqrcon-1.0.0-2721b090-2002758"
   liqrcon_backend_svc_container_memory = 30720
   liqrcon_backend_svc_container_name = "liqrcon-backend-svc-container"
+  liqrcon_nginx_container_awslogs_group = "/aws/ecs/liqrcon-ecs-giza-tfe"
+  liqrcon_nginx_container_awslogs_region = "us-east-1"
+  liqrcon_nginx_container_awslogs_stream_prefix = "liqrcon-nginx-container-tf"
   liqrcon_nginx_container_cpu = 0
   liqrcon_nginx_container_essential = false
   liqrcon_nginx_container_image = "920887439016.dkr.ecr.us-east-1.amazonaws.com/ssgecr/shared-images/mw/fm-mw-aws-nginx:6.5.0"
