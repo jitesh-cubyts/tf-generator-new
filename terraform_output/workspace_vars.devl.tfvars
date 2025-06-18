@@ -28,7 +28,6 @@ dynatrace_config = {
 
 # === APPLICATION ENVIRONMENT CONFIGURATION ===
 application_config = {
-  app_cluster_name = "liqrcon-ecs-giza-tfe"
   app_env = "DEV"
   app_name = "liqrcon"
   app_region = "us-east-1"
@@ -79,7 +78,6 @@ liqrcon_tps_backend_svc_config = {
   security_groups = ["sg-002848e70774fa349", "sg-0c03858824f8e1556"]
   service_name = "liqrcon-tps-backend-svc"
   subnets = ["subnet-0dbc0c8a0d75b817b", "subnet-046c458e6b3cc57e2", "subnet-0f6324ddedfdfd72d", "subnet-02c679e33715abe3b"]
-  target_group_arn = "arn:aws:elasticloadbalancing:us-east-1:310306400902:targetgroup/liqrcon-alb-ecs-tfbackend/c37c1dff4543a214"
   task_cpu = "4096"
   task_definition_family = "liqrcon-tps-backend-svc"
   task_family = "liqrcon-tps-backend-svc"

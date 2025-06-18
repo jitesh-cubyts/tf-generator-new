@@ -50,7 +50,6 @@ variable "dynatrace_config" {
 variable "application_config" {
   description = "Application environment configuration object"
   type = object({
-    app_cluster_name = string
     app_env = string
     app_name = string
     app_region = string
@@ -109,7 +108,6 @@ variable "liqrcon_tps_backend_svc_config" {
     security_groups = list(string)
     service_name = string
     subnets = list(string)
-    target_group_arn = string
     task_cpu = string
     task_definition_family = string
     task_family = string

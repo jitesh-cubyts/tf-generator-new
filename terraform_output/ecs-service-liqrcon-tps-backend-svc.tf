@@ -59,7 +59,7 @@ module "ecs-service-liqrcon_tps_backend_svc" {
 
   target_configuration = [
     {
-      target_group_arn = var.liqrcon_tps_backend_svc_config.target_group_arn
+      target_group_arn = #TODO - Add target group ARN using alb module
       container_name   = var.liqrcon_tps_backend_svc_config.container_name
       container_port   = var.liqrcon_tps_backend_svc_config.container_port
     }

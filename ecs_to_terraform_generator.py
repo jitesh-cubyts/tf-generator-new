@@ -133,11 +133,6 @@ class ECSToTerraformGenerator:
             },
             
             # === LOAD BALANCER MAPPINGS ===
-            'loadBalancers.0.targetGroupArn': {
-                'tf_var': 'target_group_arn',
-                'type': 'string',
-                'description': 'Target group ARN for load balancer'
-            },
             'loadBalancers.0.containerName': {
                 'tf_var': 'container_name',
                 'type': 'string',
@@ -687,7 +682,6 @@ class ECSToTerraformGenerator:
         if load_balancers:
             lb_config = load_balancers[0]  # Take first load balancer
             lb_mappings = {
-                'targetGroupArn': {'tf_var': 'target_group_arn', 'type': 'string'},
                 'containerName': {'tf_var': 'container_name', 'type': 'string'},
                 'containerPort': {'tf_var': 'container_port', 'type': 'number'},
             }
@@ -709,6 +703,10 @@ class ECSToTerraformGenerator:
         
         # Store all found environment variables
         for env_name, env_value in container_env_values.items():
+            # Skip variables that should use infrastructure config instead
+            if env_name in ['APP_CLUSTER_NAME']:
+                continue
+                
             # Create terraform variable name from environment variable name
             tf_var_name = env_name.lower().replace('.', '_')
             
@@ -942,14 +940,12 @@ class ECSToTerraformGenerator:
         for env_name, env_value in all_env_vars.items():
             tf_var_name = env_name.lower().replace('.', '_')
             
-            # Skip REGION since we handle it with primary_region
-            if env_name == 'REGION':
+            # Skip REGION since we handle it with primary_region, and APP_CLUSTER_NAME since we use infrastructure_config.cluster_name
+            if env_name in ['REGION', 'APP_CLUSTER_NAME']:
                 continue
             
-            # Update cluster name related variables with -tf suffix
-            if env_name == 'APP_CLUSTER_NAME':
-                env_value = f"{env_value}{self.cluster_suffix}"
-            elif env_name == 'DT_CUSTOM_PROP':
+            # Update cluster name related variables with configurable suffix
+            if env_name == 'DT_CUSTOM_PROP':
                 # Update ServiceId in DT_CUSTOM_PROP to include configurable suffix
                 if 'ServiceId=' in env_value:
                     parts = env_value.split(' ')
@@ -1180,14 +1176,22 @@ class ECSToTerraformGenerator:
             env_value = env_var.get('value', '')
             
             # For common variables, use template variables
-            if env_name in ['DT_LOG', 'DT_TENANT', 'DT_TENANTTOKEN', 'DT_CONNECTION_POINT', 
-                           'DT_CUSTOM_PROP', 'PRIVATE_BUCKET', 'APP_NAME', 
-                           'APP_ENV', 'APP_REGION', 'APP_CLUSTER_NAME']:
-                var_name = env_name.lower().replace('.', '_')
-                environment.append({
+            if env_name in ['DT_LOG', 'DT_TENANT', 'DT_TENANTTOKEN', 'DT_CONNECTION_POINT',
+                           'DT_CUSTOM_PROP', 'DT_LOGLEVELCON', 'DT_CLUSTER_ID', 'PRIVATE_BUCKET', 
+                           'APP_ENV', 'APP_REGION', 'APP_NAME']:
+                template_var_name = env_name.lower().replace('.', '_')
+                env_item = {
                     "name": env_name,
-                    "value": f"${{{var_name}}}"
-                })
+                    "value": f"${{{template_var_name}}}"
+                }
+                environment.append(env_item)
+            elif env_name == 'APP_CLUSTER_NAME':
+                # Use infrastructure cluster name instead of separate app_cluster_name
+                env_item = {
+                    "name": env_name,
+                    "value": "${cluster_name}"
+                }
+                environment.append(env_item)
             elif env_name == 'REGION':
                 environment.append({
                     "name": env_name,
@@ -1319,7 +1323,7 @@ class ECSToTerraformGenerator:
                 target_config = f'''
   target_configuration = [
     {{
-      target_group_arn = var.{sanitized_service_name}_config.target_group_arn
+      target_group_arn = #TODO - Add target group ARN using alb module
       container_name   = var.{sanitized_service_name}_config.container_name
       container_port   = var.{sanitized_service_name}_config.container_port
     }}
@@ -1755,14 +1759,6 @@ class ECSToTerraformGenerator:
                 updated_value = f"{current_value}{self.cluster_suffix}"
                 self.all_variables['cluster_name']['value'] = updated_value
                 print(f"  ✓ Updated cluster_name = {updated_value}")
-        
-        # Force update app_cluster_name
-        if 'app_cluster_name' in self.all_variables:
-            current_value = self.all_variables['app_cluster_name']['value']
-            if not current_value.endswith(self.cluster_suffix):
-                updated_value = f"{current_value}{self.cluster_suffix}"
-                self.all_variables['app_cluster_name']['value'] = updated_value
-                print(f"  ✓ Updated app_cluster_name = {updated_value}")
         
         # Force update dt_custom_prop
         if 'dt_custom_prop' in self.all_variables:
