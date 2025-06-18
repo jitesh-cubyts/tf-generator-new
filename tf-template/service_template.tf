@@ -43,7 +43,7 @@ module "ecs-service-{sanitized_service_name}" {{
     aws.local = aws.local
   }}
 
-  appshortname                      = var.infrastructure_config.appshortname
+  appshortname                      = var.appshortname
   microservice_name                 = var.{sanitized_service_name}_config.service_name
   cluster_id                        = module.ecs-cluster-{cluster_name}.ecs_cluster_arn
   task_definition_arn               = module.ecs-task-{sanitized_service_name}.ecs_task_definition_arn

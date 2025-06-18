@@ -1329,6 +1329,19 @@ class ECSToTerraformGenerator:
         content = "# Generated Variables File\n"
         content += "# Variables organized with object structure for services\n\n"
         
+        # === ROOT LEVEL VARIABLES ===
+        # Generate appshortname and logical_identifier as root-level variables
+        root_level_vars = ['appshortname', 'logical_identifier']
+        for var_name in root_level_vars:
+            if var_name in self.all_variables:
+                var_config = self.all_variables[var_name]
+                var_type = var_config.get('type', 'string')
+                description = var_config.get('description', f'{var_name.replace("_", " ").title()}')
+                content += f'variable "{var_name}" {{\n'
+                content += f'  description = "{description}"\n'
+                content += f'  type = {var_type}\n'
+                content += '}\n\n'
+        
         # Categorize variables by usage type (same logic as generate_workspace_vars)
         infrastructure_vars = {}
         environment_vars = {}
@@ -1363,9 +1376,12 @@ class ECSToTerraformGenerator:
             elif var_name.startswith('dt_') or 'dynatrace' in var_name.lower():
                 # Dynatrace-related variables
                 dynatrace_vars[var_name] = var_config
-            elif var_name in ['cluster_name', 'primary_region', 'secondary_region', 'environment', 'appshortname']:
-                # Infrastructure variables
+            elif var_name in ['cluster_name', 'primary_region', 'secondary_region', 'environment']:
+                # Infrastructure variables (excluding appshortname and logical_identifier)
                 infrastructure_vars[var_name] = var_config
+            elif var_name in ['appshortname', 'logical_identifier']:
+                # Skip - these are handled as root-level variables
+                continue
             elif var_name.startswith('app_') or var_name in ['private_bucket', 'spring_profiles_active', 'java_tool_options', 'sm_ssl', 'tw_container_name']:
                 # Application environment variables
                 environment_vars[var_name] = var_config
@@ -1459,8 +1475,6 @@ class ECSToTerraformGenerator:
             f.write(content)
         print(f"Generated: {self.output_dir}/variables.tf")
 
-
-
     def generate_workspace_vars(self):
         """Generate workspace_vars.tfvars file with organized object structure"""
         print(f"Generating workspace_vars.tfvars with {len(self.all_variables)} variables...")
@@ -1470,6 +1484,31 @@ class ECSToTerraformGenerator:
         
         content = "# Generated Workspace Variables\n"
         content += "# Variables organized by service and global scope\n\n"
+        
+        # === ROOT LEVEL VARIABLES ===
+        # Generate appshortname and logical_identifier as root-level variables
+        root_level_vars = ['appshortname', 'logical_identifier']
+        for var_name in root_level_vars:
+            if var_name in self.all_variables:
+                var_config = self.all_variables[var_name]
+                value = var_config.get('value')
+                var_type = var_config.get('type', 'string')
+                
+                # Format value based on type
+                if value is not None:
+                    if var_type == 'string':
+                        formatted_value = f'"{value}"'
+                    elif var_type == 'bool':
+                        if isinstance(value, bool):
+                            formatted_value = 'true' if value else 'false'
+                        else:
+                            formatted_value = 'true' if str(value).lower() in ['true', '1'] else 'false'
+                    else:
+                        formatted_value = str(value)
+                    
+                    content += f"{var_name} = {formatted_value}\n"
+        
+        content += "\n"
         
         # Categorize variables by usage type
         infrastructure_vars = {}
@@ -1527,9 +1566,12 @@ class ECSToTerraformGenerator:
                 elif var_name.startswith('dt_') or 'dynatrace' in var_name.lower():
                     # Dynatrace-related variables
                     dynatrace_vars[var_name] = formatted_value
-                elif var_name in ['cluster_name', 'primary_region', 'secondary_region', 'environment', 'appshortname']:
-                    # Infrastructure variables
+                elif var_name in ['cluster_name', 'primary_region', 'secondary_region', 'environment']:
+                    # Infrastructure variables (excluding appshortname and logical_identifier)
                     infrastructure_vars[var_name] = formatted_value
+                elif var_name in ['appshortname', 'logical_identifier']:
+                    # Skip - these are handled as root-level variables
+                    continue
                 elif var_name.startswith('app_') or var_name in ['private_bucket', 'spring_profiles_active', 'java_tool_options', 'sm_ssl', 'tw_container_name']:
                     # Application environment variables
                     environment_vars[var_name] = formatted_value

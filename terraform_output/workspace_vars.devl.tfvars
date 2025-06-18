@@ -1,12 +1,13 @@
 # Generated Workspace Variables
 # Variables organized by service and global scope
 
+appshortname = "liqrcon"
+logical_identifier = "tf"
+
 # === INFRASTRUCTURE CONFIGURATION ===
 infrastructure_config = {
-  appshortname = "liqrcon"
   cluster_name = "liqrcon-ecs-tf"
   environment = "devl"
-  logical_identifier = "tf"
   primary_region = "us-east-1"
   secondary_region = "us-east-2"
 }

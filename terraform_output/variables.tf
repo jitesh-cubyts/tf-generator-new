@@ -1,15 +1,23 @@
 # Generated Variables File
 # Variables organized with object structure for services
 
+variable "appshortname" {
+  description = "Appshortname"
+  type = string
+}
+
+variable "logical_identifier" {
+  description = "Logical Identifier"
+  type = string
+}
+
 # === INFRASTRUCTURE CONFIGURATION ===
 
 variable "infrastructure_config" {
   description = "Infrastructure configuration object"
   type = object({
-    appshortname = string
     cluster_name = string
     environment = string
-    logical_identifier = string
     primary_region = string
     secondary_region = string
   })

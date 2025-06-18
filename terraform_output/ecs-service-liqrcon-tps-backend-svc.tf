@@ -43,7 +43,7 @@ module "ecs-service-liqrcon_tps_backend_svc" {
     aws.local = aws.local
   }
 
-  appshortname                      = var.infrastructure_config.appshortname
+  appshortname                      = var.appshortname
   microservice_name                 = var.liqrcon_tps_backend_svc_config.service_name
   cluster_id                        = module.ecs-cluster-liqrcon-ecs-tf.ecs_cluster_arn
   task_definition_arn               = module.ecs-task-liqrcon_tps_backend_svc.ecs_task_definition_arn
