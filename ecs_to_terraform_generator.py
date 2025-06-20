@@ -488,14 +488,17 @@ class ECSToTerraformGenerator:
                     "value": "${spring_profiles_active}"
                 })
             elif env_name == 'S3_CERT_ENABLED':
-                # Replace S3_CERT_ENABLED with SM_SSL and hardcode to true
-                environment.append({
-                    "name": "SM_SSL",
-                    "value": "true"
-                })
+                # Skip S3_CERT_ENABLED - it will be removed
+                continue
             else:
                 # Keep original value for service-specific variables
                 environment.append(env_var)
+        
+        # Add SM_SSL to all container definitions with hardcoded value
+        environment.append({
+            "name": "SM_SSL",
+            "value": "true"
+        })
         
         container_def = {
             "name": container_config.get("name", ""),
@@ -1211,11 +1214,8 @@ class ECSToTerraformGenerator:
                     "value": "${spring_profiles_active}"
                 })
             elif env_name == 'S3_CERT_ENABLED':
-                # Replace S3_CERT_ENABLED with SM_SSL and hardcode to true
-                environment.append({
-                    "name": "SM_SSL",
-                    "value": "true"
-                })
+                # Skip S3_CERT_ENABLED - it will be removed
+                continue
             else:
                 # For service-specific variables, create a variable
                 var_name = f"{env_name.lower().replace('.', '_')}"
@@ -1223,6 +1223,12 @@ class ECSToTerraformGenerator:
                     "name": env_name,
                     "value": f"${{{var_name}}}"
                 })
+
+        # Add SM_SSL to all container definitions with hardcoded value
+        environment.append({
+            "name": "SM_SSL",
+            "value": "true"
+        })
 
         # Parameterize logConfiguration
         log_config = container_config.get("logConfiguration", {})
