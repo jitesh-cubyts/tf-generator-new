@@ -154,10 +154,6 @@
                     "value": "App=HCG-Liquidation-Reconciliation-Services LifeCycle=devl ServiceId=liqrcon-ecs-giza CmdbCode=HCG AssetId=MSR13460 CMDBLongName=Liquidation Reconciliation Services"
                 },
                 {
-                    "name": "SM_SSL",
-                    "value": "True"
-                },
-                {
                     "name": "PRIVATE_BUCKET",
                     "value": "liqrcon-devl-sfbu-us-east-1"
                 },
@@ -254,8 +250,8 @@
                     "value": "App=HCG-Liquidation-Reconciliation-Services LifeCycle=devl ServiceId=liqrcon-nginx-container CmdbCode=HCG AssetId=MSR13460 CMDBLongName=Liquidation Reconciliation Services"
                 },
                 {
-                    "name": "SM_SSL",
-                    "value": "True"
+                    "name": "S3_CERT_ENABLED",
+                    "value": "true"
                 },
                 {
                     "name": "DT_CONNECTION_POINT",

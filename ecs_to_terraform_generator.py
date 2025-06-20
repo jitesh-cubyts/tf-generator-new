@@ -487,6 +487,12 @@ class ECSToTerraformGenerator:
                     "name": env_name,
                     "value": "${spring_profiles_active}"
                 })
+            elif env_name == 'S3_CERT_ENABLED':
+                # Replace S3_CERT_ENABLED with SM_SSL and hardcode to true
+                environment.append({
+                    "name": "SM_SSL",
+                    "value": "true"
+                })
             else:
                 # Keep original value for service-specific variables
                 environment.append(env_var)
@@ -703,8 +709,8 @@ class ECSToTerraformGenerator:
         
         # Store all found environment variables
         for env_name, env_value in container_env_values.items():
-            # Skip variables that should use infrastructure config instead
-            if env_name in ['APP_CLUSTER_NAME']:
+            # Skip variables that should use infrastructure config instead, and S3_CERT_ENABLED (replaced with hardcoded SM_SSL)
+            if env_name in ['APP_CLUSTER_NAME', 'S3_CERT_ENABLED']:
                 continue
                 
             # Create terraform variable name from environment variable name
@@ -820,10 +826,10 @@ class ECSToTerraformGenerator:
                 env_name = env_var.get('name', '')
                 env_value = env_var.get('value', '')
                 
-                # Skip common variables (already handled globally)
+                # Skip common variables (already handled globally) and S3_CERT_ENABLED (replaced with hardcoded SM_SSL)
                 if env_name in ['DT_LOG', 'DT_TENANT', 'DT_TENANTTOKEN', 'DT_CONNECTION_POINT', 
                                'DT_CUSTOM_PROP', 'PRIVATE_BUCKET', 'REGION', 'APP_NAME', 
-                               'APP_ENV', 'APP_REGION', 'APP_CLUSTER_NAME', 'spring.profiles.active']:
+                               'APP_ENV', 'APP_REGION', 'APP_CLUSTER_NAME', 'spring.profiles.active', 'S3_CERT_ENABLED']:
                     continue  # Skip these as they are handled globally
                 
                 # Process other container-specific environment variables
@@ -941,7 +947,9 @@ class ECSToTerraformGenerator:
             tf_var_name = env_name.lower().replace('.', '_')
             
             # Skip REGION since we handle it with primary_region, and APP_CLUSTER_NAME since we use infrastructure_config.cluster_name
-            if env_name in ['REGION', 'APP_CLUSTER_NAME']:
+            # Skip REGION since we use primary_region instead, APP_CLUSTER_NAME since we use infrastructure_config.cluster_name,
+            # and S3_CERT_ENABLED since we replace it with hardcoded SM_SSL
+            if env_name in ['REGION', 'APP_CLUSTER_NAME', 'S3_CERT_ENABLED']:
                 continue
             
             # Update cluster name related variables with configurable suffix
@@ -1201,6 +1209,12 @@ class ECSToTerraformGenerator:
                 environment.append({
                     "name": env_name,
                     "value": "${spring_profiles_active}"
+                })
+            elif env_name == 'S3_CERT_ENABLED':
+                # Replace S3_CERT_ENABLED with SM_SSL and hardcode to true
+                environment.append({
+                    "name": "SM_SSL",
+                    "value": "true"
                 })
             else:
                 # For service-specific variables, create a variable

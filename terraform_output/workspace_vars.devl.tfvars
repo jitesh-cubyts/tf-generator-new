@@ -33,7 +33,6 @@ application_config = {
   app_region = "us-east-1"
   java_tool_options = ""
   private_bucket = "liqrcon-devl-sfbu-us-east-1"
-  sm_ssl = "True"
   spring_profiles_active = "DEVL"
   tw_container_name = "liqrcon-backend-svc-container"
 }

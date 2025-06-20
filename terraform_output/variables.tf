@@ -55,7 +55,6 @@ variable "application_config" {
     app_region = string
     java_tool_options = string
     private_bucket = string
-    sm_ssl = string
     spring_profiles_active = string
     tw_container_name = string
   })
